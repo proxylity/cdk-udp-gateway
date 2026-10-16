@@ -32,6 +32,14 @@ Normative sources read:
   the schema but in no example template.
 - **L1 decision:** expose all three (`Count`, `TimeoutInSeconds`, `SizeInMB`) as optional numbers.
   `TimeoutInSeconds` and `SizeInMB` are fractional (seconds / megabytes), `Count` is an integer.
+- **Resolution (2026-10-xx):** per the user's decision the implementation is correct. L1 JSDoc keeps
+  the unit descriptions (users need units) but the internal "C# reads strings and multiplies by …"
+  explanation was removed from the user-facing JSDoc. Kept in this internal log only.
+
+- **Resolution (2026-10-xx):** stray `DurationInMinutes` references scrubbed. No occurrence remains
+  in L1 code, JSDoc, or README (the only mentions are in this log and `review.md`, both describing
+  the divergence, plus the out-of-scope `listener-schema.json` cruft). The TS member stays `duration`
+  (emits `Duration`); no code change was required. Resolved in L1 by this workflow.
 
 ## D-03 — WireGuard `DecapsulatedDelivery` is read, but the validator checks a typo'd key
 - **Normative (C#):** `ListenerHelperExtensions.WithWireGuardSpecificAttributes` reads
@@ -44,6 +52,9 @@ Normative sources read:
 - **L1 decision:** expose `DecapsulatedDelivery` (correct spelling) only. Record the control-plane
   typo for follow-up. Boolean, optional, default `false` (the extension defaults to `false` when
   absent, though prose docs claim a `true` default — see D-04).
+- **Resolution (2026-10-xx):** validator typo `DecapulatedDelivery`→`DecapsulatedDelivery` is being
+  fixed in `proxylity-control` by a separate workflow. L1 already exposes only the correctly spelled
+  `decapsulatedDelivery`, so no L1 change is needed. Resolved, pending that workflow's commit.
 
 ## D-04 — WireGuard `DecapsulatedDelivery` default: prose says `true`, code yields `false`
 - **Where:** validator comment says "boolean (optional, default true)".
@@ -53,6 +64,10 @@ Normative sources read:
 - **L1 decision:** L1 does not set a default; it omits the property when the caller omits it, so the
   resource applies its own (effective `false`) behavior. JSDoc notes the discrepancy and that L1
   does not override it.
+- **Resolution (2026-10-xx):** `decapsulatedDelivery` JSDoc corrected to state the effective default
+  is `false` (dropping the stale `true` claim) and that L1 omits the property so the resource applies
+  its own `false` behavior. Internal C# reasoning kept out of the user-facing JSDoc. Resolved in L1
+  by this workflow.
 
 ## D-05 — `Custom::ProxylityUdpGatewayDestination` is NOT implemented
 - **Normative (C#):** `Function.cs` dispatches `Custom::ProxylityUdpGatewayDestination` to
@@ -71,6 +86,9 @@ Normative sources read:
   bound), documents WebRTC/DTLS fields with constraints the C# validator does not enforce
   identically, and omits several `Arguments` properties the validator accepts (location-tracker set,
   `UseAsyncInvoke`, etc.). L1 is built from the C# surface, not the schema.
+- **Resolution (2026-10-xx):** per the user's decision the implementation is correct. No user-facing
+  JSDoc references the old JSON schema or its cruft status — users do not need to know a schema ever
+  existed. Kept in this internal log only.
 
 ## D-07 — PacketSource `Enabled` property appears in examples but is not read by the handler
 - **Where:** `blink/.../regional.template.json` and `coap-demo/.../region.template.json` set
@@ -80,6 +98,12 @@ Normative sources read:
 - **L1 decision:** expose `Enabled` as an optional pass-through property (so faithfully-copied
   example templates round-trip) but document in JSDoc that the current resource ignores it. Record
   for follow-up — either the resource should honor it or the examples should drop it.
+- **Resolution (2026-10-xx):** decided — `Enabled` is removed from the PacketSource contract and
+  from the example templates in `proxylity-control`/`examples` by a separate workflow. L1 followed
+  suit: the `enabled` member was removed from `CfnPacketSourceProps`, its wire mapping, and the
+  PacketSource test (an intentional pre-release API removal — L1 is not yet published, so no
+  deprecation cycle). Resolved in L1 by this workflow; pending the control-plane/examples workflow's
+  commit.
 
 ## D-08 — PacketSource source role lives under `SnsTopicSource.Role`, not a top-level `Role`
 - **Normative (C#):** `PacketSourceRequestValidator` reads the IAM role ARN from
@@ -87,6 +111,9 @@ Normative sources read:
   from the Listener/Destination `Role { Arn, Duration }` object shape.
 - **L1 decision:** model `SnsTopicSource` as `{ TopicArn: string, Role: string }` exactly. Do not
   reuse the Listener role object shape here.
+- **Resolution (2026-10-xx):** per the user's decision the implementation is correct. L1 JSDoc keeps
+  the description that `role` is a role ARN string; the comparison to the Listener/Destination
+  `Role {Arn}` object shape was removed from the user-facing JSDoc. Kept in this internal log only.
 
 ## D-09 — Listener-level `Role` is required only when `MetricsEnabled`/`LogGroupName` is set
 - **Normative (C#):** `ListenerRequestValidator` requires a listener-level `Role { Arn }` when
@@ -94,6 +121,10 @@ Normative sources read:
   `Role` also honors `Role.Duration` (TimeSpan, default `"1:00:00"`).
 - **L1 decision:** L1 does not enforce this cross-field rule (L1 is un-opinionated and lets the
   resource reject invalid combinations). Documented in JSDoc as a server-side requirement.
+- **Resolution (2026-10-xx):** per the user's decision the implementation is correct. The
+  cross-field "Role required when metrics/logs set" callout was removed from the user-facing JSDoc
+  (L1 does not enforce it, so it should not be framed as an L1 rule); a brief neutral note that the
+  role is used for metrics/log delivery remains. Kept in this internal log only.
 
 ## D-10 — `RequireCookies` boolean is a string for DTLS but a real boolean for WebRTC
 - **Normative (C#):** `ListenerRequestValidator` validates `RequireCookies` differently by protocol:
@@ -102,6 +133,10 @@ Normative sources read:
   all property values to strings on the wire regardless, so in practice both arrive as strings.
 - **L1 decision:** expose `RequireCookies` as a TS `boolean`; jsii/CDK serialize it and the resource
   coerces. Note the per-protocol validator asymmetry for follow-up.
+- **Resolution (2026-10-xx):** per the user's decision the implementation is correct. `requireCookies`
+  stays typed as `boolean` with a short description (DTLS default `false`, WebRTC always on); the
+  internal per-protocol validator-asymmetry explanation was removed from the user-facing JSDoc. Kept
+  in this internal log only.
 
 ## D-11 — Refresh-token rotation markers are update-only and otherwise inert
 - **Normative (C#):** `KeyRefreshToken` (wg), `CertRefreshToken` (dtls/webrtc), and
@@ -110,6 +145,11 @@ Normative sources read:
 - **L1 decision:** expose all three as optional strings on `CfnListener` so callers can trigger
   rotation by changing them. JSDoc explains they are rotation markers with effect only on stack
   update.
+- **Resolution (2026-10-xx):** this is user-relevant, so a concise user-facing note was KEPT on each
+  of `keyRefreshToken` / `certRefreshToken` / `webRtcSignalingRefreshToken` — changing the value
+  rotates the key/cert/signaling token on stack update. The deep internal "read only by
+  ListenerUpdateHelper / inert on create" reasoning was trimmed from the JSDoc. Kept in this internal
+  log only.
 
 ## D-12 — DTLS create ignores a supplied `ServerSecret`; only WebRTC honors it
 - **Where:** `ServerSecret` is documented (brief and prior design) as "resource generates one if
@@ -132,6 +172,12 @@ Normative sources read:
   generates a fresh secret (a non-base64 value is still rejected by the validator). Record for
   follow-up: either DTLS create should honor a supplied `ServerSecret` or the property should be
   rejected for DTLS to avoid the silent discard.
+- **Resolution (2026-10-xx):** DTLS create/update now honors a caller-supplied `ServerSecret`,
+  symmetric with WebRTC (confirmed the `proxy-app` data plane uses `server_secret` identically for
+  DTLS and WebRTC as the cookie HMAC key). This fix is applied in `proxylity-control` by a separate
+  workflow. L1 already passes `serverSecret` through unchanged for both protocols, so no L1 wire
+  change is required. Resolved, pending that workflow's commit. (The L1 `serverSecret` JSDoc still
+  documents today's asymmetry; it should be simplified once the control-plane fix lands.)
 
 ## D-13 — Inline `Destinations[].DestinationArn` region map: keys must match the ARN's own region
 - **Where:** the brief/prior design model the region map as a free-form `{ "<region>": arn, "*": arn }`
@@ -157,6 +203,37 @@ Normative sources read:
   the `DestinationArnMap.byRegion` type, the inline `destinationArn`/`destinationArnMap` field, and
   the standalone `CfnDestinationArn` section, so JSDoc carries it and authors learn it at author-time
   rather than only as a deploy-time stack failure.
+- **Resolution (2026-10-xx):** decided — the `key == ARN-region` rule is REMOVED, and the inline and
+  standalone `DestinationArn` validators are made uniform (values are ARNs, keys are a region name or
+  `*`, single-service). This control-plane change is applied in `proxylity-control` by a separate
+  workflow. L1 followed suit: the `key must match the ARN region` callouts were removed from the
+  `DestinationArnMap` type, the inline `destinationArnMap` field, and the standalone
+  `CfnDestinationArn`/`ingressRegionKey` JSDoc. Neutral, accurate descriptions remain (a region→ARN
+  map with a `*` default; a per-region ingress key). The remaining true constraint (all ARNs same
+  service) is a server-side rule and is NOT surfaced as an L1 callout — L1 stays un-opinionated. No
+  synth-time validation added. Resolved in L1 by this workflow; pending the control-plane workflow's
+  commit.
+
+## D-14 — `FilterExpression` create reads the listener-level bag, not the inline destination
+- **Where:** inline destination `Destinations[].FilterExpression` (`design-review.md` finding 1).
+- **Normative (C#):** `ListenerRequestValidator` validates `FilterExpression` **per inline
+  destination** (`destination_definitions.All(d => d.Get("FilterExpression") …)`) and
+  `ListenerUpdateHelper` reads it **per destination** (`d.Value!["FilterExpression"]`), round-tripped
+  as `filter_expression` per destination item. However, `ListenerCreateHelper.cs` reads it from the
+  **listener-level** request bag inside the per-destination `Put` loop:
+  ```csharp
+  { "filter_expression", new() { S = request.ResourceProperties?.Get("FilterExpression")?.GetValue<string>() ?? string.Empty } },
+  ```
+  So on **create** each inline destination's own `FilterExpression` is dropped and every destination
+  gets the (usually empty) listener-level value. This is a control-plane create-vs-update
+  inconsistency *within* the C#, not a schema/example divergence.
+- **L1 decision:** L1 correctly models `filterExpression` as a **per-inline-destination** property
+  (matching the validator + update path), so no L1 change is needed. No example template uses
+  `FilterExpression`, so there is no golden-test impact.
+- **Resolution (2026-10-xx):** `FilterExpression` is a destination property and must be read only
+  from the inline destination; the control-plane create path is being fixed to read it per
+  destination (not from the listener-level bag) in `proxylity-control` by a separate workflow.
+  Resolved, pending that workflow's commit. No L1 change required.
 
 ---
 
@@ -164,20 +241,21 @@ Normative sources read:
 
 L1 implementation complete and verified (see `VERIFICATION.md`). No NEW schema/docs-vs-C#
 divergences were discovered while implementing the four constructs, the `ProxylityConfig` helper,
-and the packet-counter golden synth test. D-01 … D-13 remain the complete set, and each is reflected
-in JSDoc on the relevant construct member:
-- D-01 (`Role.Duration` TimeSpan) — `ListenerRole.duration`.
-- D-02 (`Batching` units) — `Batching.{count,timeoutInSeconds,sizeInMB}`.
+and the packet-counter golden synth test. D-01 … D-14 are the complete set (D-14 added from the
+design review's `FilterExpression` finding). Member mapping (post doc-fix workflow):
+- D-01 (`Role.Duration` TimeSpan) — `ListenerRole.duration`. No stray `DurationInMinutes` in L1.
+- D-02 (`Batching` units) — `Batching.{count,timeoutInSeconds,sizeInMB}` (units kept, C# internals removed).
 - D-03/D-04 (`DecapsulatedDelivery` spelling + effective `false` default) — `CfnListenerProps.decapsulatedDelivery`.
 - D-05 (`CfnDestination` omitted) — `src/index.ts` comment + README; no export exists.
-- D-06 (schema is cruft) — ignored; L1 built from the C# surface.
-- D-07 (`Enabled` ignored) — `CfnPacketSourceProps.enabled`.
-- D-08 (`SnsTopicSource.Role` is a bare string) — `SnsTopicSource.role`.
-- D-09 (listener `Role` required with metrics/logs) — `CfnListenerProps.{role,metricsEnabled,logGroupName}`.
-- D-10 (`RequireCookies` per-protocol) — `CfnListenerProps.requireCookies`.
-- D-11 (refresh tokens update-only) — `keyRefreshToken` / `certRefreshToken` / `webRtcSignalingRefreshToken`.
-- D-12 (DTLS discards `ServerSecret`, WebRTC honors it) — `CfnListenerProps.serverSecret`.
-- D-13 (inline region-map key==ARN-region) — `DestinationArnMap` + `CfnDestinationArn.ingressRegionKey`.
+- D-06 (schema is cruft) — ignored; L1 built from the C# surface; no schema mention in user JSDoc.
+- D-07 (`Enabled`) — REMOVED from `CfnPacketSourceProps`, its wire mapping, and the test.
+- D-08 (`SnsTopicSource.Role` is a bare string) — `SnsTopicSource.role` (role-object comparison removed from JSDoc).
+- D-09 (listener `Role` + metrics/logs) — `CfnListenerProps.{role,metricsEnabled,logGroupName}` (cross-field callout removed).
+- D-10 (`RequireCookies` per-protocol) — `CfnListenerProps.requireCookies` (asymmetry internals removed).
+- D-11 (refresh tokens) — `keyRefreshToken` / `certRefreshToken` / `webRtcSignalingRefreshToken` (concise rotation note kept).
+- D-12 (DTLS/WebRTC `ServerSecret`) — `CfnListenerProps.serverSecret`; control-plane fix pending (now symmetric).
+- D-13 (region-map key==ARN-region) — rule REMOVED; callouts stripped from `DestinationArnMap` + `CfnDestinationArn.ingressRegionKey`.
+- D-14 (`FilterExpression` create/update) — `ListenerDestination.filterExpression`; L1 already per-destination, no change.
 
 Note (not a schema divergence, recorded for the follow-up): the task brief listed a speculative
 `IPv4s` listener output attribute. `CloudFormationResponse` / `ListenerCreateHelper` set only `Id`,

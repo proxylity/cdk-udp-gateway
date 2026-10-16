@@ -56,13 +56,11 @@ export interface Batching {
   readonly count?: number;
   /**
    * `Batching.TimeoutInSeconds` — maximum wait in fractional seconds. Resource default 0.25.
-   * See DIVERGENCES D-02 (seconds, not milliseconds).
    * @default - control plane applies 0.25
    */
   readonly timeoutInSeconds?: number;
   /**
    * `Batching.SizeInMB` — advisory maximum batch size in fractional megabytes. Resource default 1.0.
-   * See DIVERGENCES D-02.
    * @default - control plane applies 1.0
    */
   readonly sizeInMB?: number;
@@ -70,25 +68,15 @@ export interface Batching {
 
 /**
  * Region→ARN map form of an inline destination's `DestinationArn`.
- *
- * Control-plane rules (`ListenerRequestValidator`; L1 does NOT enforce them — the resource rejects
- * violations at deploy with a `FAILED` reason, see DIVERGENCES D-13):
- *  - Every value must be a valid ARN string.
- *  - Each non-`"*"` key MUST equal the AWS region embedded in its own ARN value
- *    (`arn:partition:service:<region>:...`). The `"*"`/default entry is exempt from region-matching.
- *  - All ARNs in the map must be for the SAME service (all `lambda`, all `sqs`, etc.).
  */
 export interface DestinationArnMap {
   /**
-   * Fallback ARN used when no region-specific entry matches. Serialized as the `"*"` key (exempt
-   * from region-matching).
+   * Fallback ARN used when no region-specific entry matches. Serialized as the `"*"` key.
    */
   readonly default?: string;
   /**
    * Region-keyed ARNs, e.g.
    * `{ "us-east-1": "arn:aws:lambda:us-east-1:...", "eu-west-1": "arn:aws:lambda:eu-west-1:..." }`.
-   * Each key MUST match the region embedded in its ARN value, and all ARNs must be the same service;
-   * the control plane rejects maps that violate either rule (D-13). L1 does not validate this.
    */
   readonly byRegion?: { [region: string]: string };
 }
@@ -180,7 +168,7 @@ export interface ListenerDestination {
   readonly destinationArn?: string;
   /**
    * `Destinations[].DestinationArn` region-map form. Mutually exclusive with `destinationArn`;
-   * setting both throws at synth. See {@link DestinationArnMap} for the control-plane rules (D-13).
+   * setting both throws at synth. See {@link DestinationArnMap}.
    */
   readonly destinationArnMap?: DestinationArnMap;
   /** `Destinations[].Batching` — `{ Count?, TimeoutInSeconds?, SizeInMB? }`. */
@@ -234,26 +222,24 @@ export interface CfnListenerProps {
    * ({@link ListenerDestination}) or a `string` reference to an existing destination name.
    */
   readonly destinations?: Array<ListenerDestination | string>;
-  /**
-   * CloudFormation `MetricsEnabled` (listener-level). Requires a listener-level `role` server-side
-   * (D-09); L1 does not enforce this cross-field rule.
-   */
+  /** CloudFormation `MetricsEnabled` (listener-level) — enable listener metrics. */
   readonly metricsEnabled?: boolean;
   /**
    * CloudFormation `LogGroupName` (listener-level), 1–512 chars, pattern `[a-zA-Z0-9_\-/.#]`.
-   * Requires a listener-level `role` server-side (D-09); L1 does not enforce this.
    */
   readonly logGroupName?: string;
   /**
-   * CloudFormation `Role` (listener-level). Required server-side when `metricsEnabled` or
-   * `logGroupName` is set (D-09). L1 does not enforce this.
+   * CloudFormation `Role` (listener-level) — IAM role used for metrics and log delivery.
    */
   readonly role?: ListenerRole;
 
   // --- WireGuard (wg) — only valid when protocols === ['wg'] ---
   /**
-   * `DecapsulatedDelivery` (wg). Effective default `false` (D-04 — prose docs claim `true`, the code
-   * yields `false`). Correct spelling; the control-plane validator checks a typo'd dead key (D-03).
+   * `DecapsulatedDelivery` (wg). The effective default is `false` when the property is omitted. L1
+   * does not set a default; it omits the property when the caller omits it, so the resource applies
+   * its own `false` behavior.
+   *
+   * @default - resource applies `false`
    */
   readonly decapsulatedDelivery?: boolean;
   /** `AllowUnknownPeers` (wg). Default `false`. */
@@ -266,8 +252,8 @@ export interface CfnListenerProps {
   /** `Peers` (wg). */
   readonly peers?: WireGuardPeer[];
   /**
-   * `KeyRefreshToken` (wg) — update-only rotation marker. Changing it regenerates the server key
-   * pair on stack update; inert on create (D-11).
+   * `KeyRefreshToken` (wg) — rotation marker. Changing its value regenerates the server key pair on
+   * stack update.
    */
   readonly keyRefreshToken?: string;
 
@@ -281,8 +267,8 @@ export interface CfnListenerProps {
   /** `WebRtcSignalingMode` (webrtc) — `'none'` (default) or `'public'`. */
   readonly webRtcSignalingMode?: string;
   /**
-   * `WebRtcSignalingRefreshToken` (webrtc) — update-only signaling-token rotation marker; inert on
-   * create (D-11).
+   * `WebRtcSignalingRefreshToken` (webrtc) — rotation marker. Changing its value rotates the
+   * signaling token on stack update.
    */
   readonly webRtcSignalingRefreshToken?: string;
 
@@ -297,12 +283,13 @@ export interface CfnListenerProps {
    */
   readonly serverSecret?: string;
   /**
-   * `RequireCookies` (dtls/webrtc). DTLS default `false` (D-10); for WebRTC the resource forces
-   * cookies on regardless.
+   * `RequireCookies` (dtls/webrtc) — require a cookie exchange. DTLS default `false`; WebRTC always
+   * requires cookies.
    */
   readonly requireCookies?: boolean;
   /**
-   * `CertRefreshToken` (dtls/webrtc) — update-only cert rotation marker; inert on create (D-11).
+   * `CertRefreshToken` (dtls/webrtc) — rotation marker. Changing its value rotates the server
+   * certificate on stack update.
    */
   readonly certRefreshToken?: string;
 }
@@ -351,6 +338,10 @@ export class CfnListener extends Construct {
   /**
    * `Fn::GetAtt(..., 'DestinationNames')` — the destination names, as a string-LIST token. Always
    * available. Index it with `Fn.select(0, listener.attrDestinationNames)`.
+   *
+   * This is a CloudFormation list token (an `Fn::GetAtt` of a list attribute); consume it only with
+   * list-aware intrinsics such as `Fn.select` / `Fn.join`, and never embed it in a scalar string
+   * context like `Fn.sub`/`${...}` interpolation (unlike `attrPort`, which is scalar).
    */
   public get attrDestinationNames(): string[] {
     return this.resource.getAtt('DestinationNames').toStringList();

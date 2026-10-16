@@ -4,14 +4,11 @@ import { wireObject } from './private/to-wire';
 
 /**
  * The SNS topic source for a packet source (`SnsTopicSource`).
- *
- * NOTE: the IAM role here is a bare string ARN under `Role`, NOT a `{ Arn, Duration }` object like
- * the Listener/Destination role shape (DIVERGENCES D-08).
  */
 export interface SnsTopicSource {
   /** `SnsTopicSource.TopicArn` — SNS topic ARN; must be in the same region as the stack. */
   readonly topicArn: string;
-  /** `SnsTopicSource.Role` — IAM role ARN as a bare string (NOT a `{ Arn }` object — D-08). */
+  /** `SnsTopicSource.Role` — IAM role ARN as a bare string. */
   readonly role: string;
 }
 
@@ -30,11 +27,6 @@ export interface CfnPacketSourceProps {
   readonly snsTopicSource: SnsTopicSource;
   /** CloudFormation `Description` — resource generates one if omitted. */
   readonly description?: string;
-  /**
-   * CloudFormation `Enabled` — PASS-THROUGH ONLY. The current control-plane resource does NOT read
-   * this property (DIVERGENCES D-07). Exposed so faithfully-copied example templates round-trip.
-   */
-  readonly enabled?: boolean;
 }
 
 const RESOURCE_TYPE = 'Custom::ProxylityUdpGatewayPacketSource';
@@ -60,7 +52,6 @@ export class CfnPacketSource extends Construct {
         ['ListenerName', props.listenerName],
         ['SnsTopicSource', snsTopicSourceToWire(props.snsTopicSource)],
         ['Description', props.description],
-        ['Enabled', props.enabled],
       ]),
     });
   }

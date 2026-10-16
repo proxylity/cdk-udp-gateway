@@ -132,4 +132,4 @@ rejects it, the stack event explains why. L1 performs only one client-side check
 destination may not set both `destinationArn` and `destinationArnMap` (both map to the single
 `DestinationArn` wire key). Everything else (CIDR/ARN/base64 formats, name regex, enum membership,
 numeric ranges, cross-field requirements) is left to the resource. Known schema/docs-vs-implementation
-divergences are catalogued in `.agents/tasks/cdk-udp-gateway-l1/DIVERGENCES.md` (D-01 … D-13).
+divergences are catalogued in `.agents/tasks/cdk-udp-gateway-l1/DIVERGENCES.md` (D-01 … D-14).

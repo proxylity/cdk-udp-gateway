@@ -15,14 +15,7 @@ export interface CfnDestinationArnProps {
   readonly destination: string;
   /**
    * CloudFormation `IngressRegionKey` — the ingress region name, or `"*"` to register a FALLBACK
-   * ARN.
-   *
-   * Control-plane rules (`DestinationArnCreateHelper`; L1 does NOT enforce them — the resource
-   * rejects conflicts at deploy with a `FAILED` reason, cross-reference DIVERGENCES D-13):
-   *  - `"*"` is rejected when a string/fallback ARN already exists for the destination.
-   *  - A region key is rejected if that key is already present on the destination's ARN map.
-   *  - All ARNs for one destination must share a service.
-   * Examples pass `{ Ref: "AWS::Region" }`.
+   * ARN. Examples pass `{ Ref: "AWS::Region" }`.
    */
   readonly ingressRegionKey: string;
   /** CloudFormation `Arn` — a single valid ARN for this region. */
@@ -35,8 +28,7 @@ const RESOURCE_TYPE = 'Custom::ProxylityUdpGatewayDestinationArn';
  * L1 construct for `Custom::ProxylityUdpGatewayDestinationArn`.
  *
  * Registers one ARN for one destination in one ingress region. A faithful 1:1 wrapper that passes
- * the three strings through; the control plane enforces the fallback/duplicate-key/same-service
- * rules (D-13 cross-reference).
+ * the three strings through; the control plane enforces any registration rules at deploy time.
  */
 export class CfnDestinationArn extends Construct {
   /** The underlying custom resource. */

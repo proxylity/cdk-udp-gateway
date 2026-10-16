@@ -14,7 +14,6 @@ describe('CfnPacketSource', () => {
         role: 'arn:aws:iam::111122223333:role/r',
       },
       description: 'desc',
-      enabled: true,
     });
 
     Template.fromStack(stack).hasResourceProperties('Custom::ProxylityUdpGatewayPacketSource', {
@@ -27,7 +26,6 @@ describe('CfnPacketSource', () => {
         Role: 'arn:aws:iam::111122223333:role/r',
       },
       Description: 'desc',
-      Enabled: true,
     });
   });
 
@@ -63,6 +61,5 @@ describe('CfnPacketSource', () => {
       (r: any) => r.Type === 'Custom::ProxylityUdpGatewayPacketSource',
     ) as any;
     expect(ps.Properties).not.toHaveProperty('Description');
-    expect(ps.Properties).not.toHaveProperty('Enabled');
   });
 });
