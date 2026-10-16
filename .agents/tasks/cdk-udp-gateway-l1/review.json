@@ -1,0 +1,7 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    "Non-blocking (cosmetic): in CfnListenerProps, the WebRTC signaling members webRtcSignalingMode and webRtcSignalingRefreshToken are declared under the '// --- DTLS (dtls) ---' comment banner. The wire mapping and JSDoc are correct; only the source comment grouping is misleading. Move them under a WebRTC banner in a future touch."
+  ],
+  "reviewDoc": "c:\\Users\\leeha\\source\\proxylity\\cdk\\.agents\\tasks\\cdk-udp-gateway-l1\\review.md"
+}
