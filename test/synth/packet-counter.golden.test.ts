@@ -16,9 +16,11 @@ import { PacketCounterStack } from './packet-counter';
  * tuples compare equal with no normalization required).
  */
 
+// Vendored snapshot of examples/packet-counter/packet-counter.template.json so this test is
+// self-contained in CI, where the examples repo is not checked out. See test/fixtures/README.md.
 const EXAMPLE_PATH = path.resolve(
   __dirname,
-  '../../../examples/packet-counter/packet-counter.template.json',
+  '../fixtures/packet-counter.template.json',
 );
 
 function readExample(): any {
