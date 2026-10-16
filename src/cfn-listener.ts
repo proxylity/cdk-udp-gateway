@@ -274,12 +274,9 @@ export interface CfnListenerProps {
 
   // --- shared between dtls and webrtc ---
   /**
-   * `ServerSecret` (dtls/webrtc) — base64 32-byte.
-   *
-   * ASYMMETRIC behavior (D-12): for `webrtc` a caller-supplied value IS honored (one is generated
-   * only when omitted); for `dtls` the control-plane create path ALWAYS regenerates a fresh secret
-   * and SILENTLY DISCARDS any supplied value. The validator still rejects a non-base64 value for
-   * either protocol. L1 passes the value through unchanged for both; it does not strip it for DTLS.
+   * `ServerSecret` (dtls/webrtc) — base64 32-byte secret used as the cookie HMAC key. A
+   * caller-supplied value is honored for both `dtls` and `webrtc`; one is generated only when
+   * omitted. Must be base64 when present.
    */
   readonly serverSecret?: string;
   /**

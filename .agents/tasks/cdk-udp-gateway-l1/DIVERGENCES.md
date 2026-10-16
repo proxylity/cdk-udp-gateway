@@ -172,12 +172,15 @@ Normative sources read:
   generates a fresh secret (a non-base64 value is still rejected by the validator). Record for
   follow-up: either DTLS create should honor a supplied `ServerSecret` or the property should be
   rejected for DTLS to avoid the silent discard.
-- **Resolution (2026-10-xx):** DTLS create/update now honors a caller-supplied `ServerSecret`,
-  symmetric with WebRTC (confirmed the `proxy-app` data plane uses `server_secret` identically for
-  DTLS and WebRTC as the cookie HMAC key). This fix is applied in `proxylity-control` by a separate
-  workflow. L1 already passes `serverSecret` through unchanged for both protocols, so no L1 wire
-  change is required. Resolved, pending that workflow's commit. (The L1 `serverSecret` JSDoc still
-  documents today's asymmetry; it should be simplified once the control-plane fix lands.)
+- **Resolution (2026-10-16):** RESOLVED. DTLS create/update now honors a caller-supplied
+  `ServerSecret`, symmetric with WebRTC (confirmed the `proxy-app` data plane
+  `Models.Listener.ServerSecret` uses `server_secret` identically for DTLS and WebRTC as the cookie
+  HMAC key: `CookieCurrentKey = ServerSecret`). Control-plane fix committed in `proxylity-control`
+  (`4356ff4`): `WithDtlsSpecificAttributes` DTLS case now generates only when absent, and the update
+  override was broadened from `webrtc`-only to `webrtc||dtls`; the base64 validator guard is
+  unchanged. L1 passes `serverSecret` through unchanged for both protocols (no wire change), and the
+  L1 `serverSecret` JSDoc was simplified to describe the now-symmetric behavior (honored for both;
+  generated only when omitted; base64 required).
 
 ## D-13 — Inline `Destinations[].DestinationArn` region map: keys must match the ARN's own region
 - **Where:** the brief/prior design model the region map as a free-form `{ "<region>": arn, "*": arn }`
@@ -253,7 +256,7 @@ design review's `FilterExpression` finding). Member mapping (post doc-fix workfl
 - D-09 (listener `Role` + metrics/logs) — `CfnListenerProps.{role,metricsEnabled,logGroupName}` (cross-field callout removed).
 - D-10 (`RequireCookies` per-protocol) — `CfnListenerProps.requireCookies` (asymmetry internals removed).
 - D-11 (refresh tokens) — `keyRefreshToken` / `certRefreshToken` / `webRtcSignalingRefreshToken` (concise rotation note kept).
-- D-12 (DTLS/WebRTC `ServerSecret`) — `CfnListenerProps.serverSecret`; control-plane fix pending (now symmetric).
+- D-12 (DTLS/WebRTC `ServerSecret`) — `CfnListenerProps.serverSecret`; control-plane fix committed (`4356ff4`, now symmetric); L1 JSDoc simplified.
 - D-13 (region-map key==ARN-region) — rule REMOVED; callouts stripped from `DestinationArnMap` + `CfnDestinationArn.ingressRegionKey`.
 - D-14 (`FilterExpression` create/update) — `ListenerDestination.filterExpression`; L1 already per-destination, no change.
 
