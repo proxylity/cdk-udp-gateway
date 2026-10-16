@@ -28,7 +28,7 @@
     "watch": "jsii -w",
     "build": "jsii --silence-warnings=reserved-word && jsii-docgen -o API.md || jsii --silence-warnings=reserved-word",
     "package": "jsii-pacmak",
-    "lint": "eslint --ext .ts src test",
+    "lint": "eslint src test",
     "test": "jest"
   },
   "jsii": {
@@ -68,18 +68,19 @@
     "constructs": "^10.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.0",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
+    "@types/node": "^22.0.0",
     "aws-cdk-lib": "2.160.0",
     "constructs": "10.0.0",
-    "eslint": "^8.57.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
     "jest": "^29.7.0",
-    "jsii": "~5.5.0",
-    "jsii-pacmak": "~1.103.0",
+    "jsii": "~5.9.0",
+    "jsii-pacmak": "~1.140.0",
     "ts-jest": "^29.2.0",
-    "typescript": "~5.5.0"
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.0.0"
   },
   "bundledDependencies": [],
   "files": [

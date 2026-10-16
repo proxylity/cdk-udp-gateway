@@ -3,7 +3,7 @@
 # golden test). Mirrors the proxylity-control house style: bash, set -ex, CODEBUILD_* env.
 set -ex
 
-# jsii 5.5 warns loudly when run on an untested Node major; silence it for a clean CI log.
+# jsii warns loudly when run on an untested Node major; silence it for a clean CI log.
 export JSII_SILENCE_WARNING_UNTESTED_NODE_VERSION=1
 
 echo "Running checks in ${CODEBUILD_SRC_DIR:-$(pwd)}"

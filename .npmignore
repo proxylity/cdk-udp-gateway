@@ -8,7 +8,7 @@ buildspec.yml
 .projenrc.ts
 tsconfig.json
 tsconfig.dev.json
-.eslintrc.json
+eslint.config.mjs
 jest.config.js
 coverage/
 dist/
