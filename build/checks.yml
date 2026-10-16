@@ -1,0 +1,14 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    on-failure: ABORT
+    runtime-versions:
+      nodejs: 20
+  build:
+    on-failure: ABORT
+    commands:
+      - scripts/checks.sh

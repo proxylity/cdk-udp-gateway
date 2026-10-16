@@ -1,0 +1,20 @@
+# build output
+lib/
+dist/
+*.tsbuildinfo
+.jsii
+tsconfig.json
+
+# dependencies
+node_modules/
+
+# logs
+*.log
+npm-debug.log*
+
+# generated docs
+API.md
+
+# OS / editor
+.DS_Store
+*.swp

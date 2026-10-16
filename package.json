@@ -1,0 +1,90 @@
+{
+  "name": "@proxylity/cdk-udp-gateway",
+  "version": "0.1.0",
+  "description": "L1 (CloudFormation-faithful) AWS CDK construct library for the Proxylity UDP Gateway custom resources.",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Proxylity",
+    "organization": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/proxylity/cdk-udp-gateway.git"
+  },
+  "homepage": "https://proxylity.com",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "stability": "experimental",
+  "keywords": [
+    "aws",
+    "cdk",
+    "aws-cdk",
+    "proxylity",
+    "udp",
+    "udp-gateway"
+  ],
+  "scripts": {
+    "compile": "jsii --silence-warnings=reserved-word",
+    "watch": "jsii -w",
+    "build": "jsii --silence-warnings=reserved-word && jsii-docgen -o API.md || jsii --silence-warnings=reserved-word",
+    "package": "jsii-pacmak",
+    "lint": "eslint --ext .ts src test",
+    "test": "jest"
+  },
+  "jsii": {
+    "outdir": "dist",
+    "versionFormat": "short",
+    "excludeTypescript": [
+      "test"
+    ],
+    "tsc": {
+      "outDir": "lib",
+      "rootDir": "src"
+    },
+    "targets": {
+      "python": {
+        "distName": "proxylity-cdk-udp-gateway",
+        "module": "proxylity_cdk_udp_gateway"
+      },
+      "dotnet": {
+        "namespace": "Proxylity.CDK.UdpGateway",
+        "packageId": "Proxylity.CDK.UdpGateway"
+      },
+      "java": {
+        "package": "com.proxylity.cdk.udpgateway",
+        "maven": {
+          "groupId": "com.proxylity",
+          "artifactId": "cdk-udp-gateway"
+        }
+      },
+      "go": {
+        "moduleName": "github.com/proxylity/cdk-udp-gateway",
+        "packageName": "cdkudpgateway"
+      }
+    }
+  },
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.160.0",
+    "constructs": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "aws-cdk-lib": "2.160.0",
+    "constructs": "10.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "jsii": "~5.5.0",
+    "jsii-pacmak": "~1.103.0",
+    "ts-jest": "^29.2.0",
+    "typescript": "~5.5.0"
+  },
+  "bundledDependencies": [],
+  "files": [
+    "lib",
+    ".jsii",
+    "README.md"
+  ]
+}

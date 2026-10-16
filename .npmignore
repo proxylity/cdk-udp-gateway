@@ -1,0 +1,25 @@
+# source and config - published package carries compiled lib + .jsii only
+src/
+test/
+.agents/
+build/
+scripts/
+buildspec.yml
+.projenrc.ts
+tsconfig.json
+tsconfig.dev.json
+.eslintrc.json
+jest.config.js
+coverage/
+dist/
+node_modules/
+*.tsbuildinfo
+
+# keep
+!lib/**
+!.jsii
+!README.md
+
+
+# Exclude jsii outdir
+dist

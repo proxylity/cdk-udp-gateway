@@ -1,0 +1,22 @@
+{
+  "verdict": "APPROVED",
+  "findings": [
+    {
+      "id": 1,
+      "severity": "NIT",
+      "title": "FilterExpression create/update divergence not recorded in DIVERGENCES",
+      "location": "design.md inline-destination ListenerDestination.filterExpression; DIVERGENCES.md",
+      "problem": "ListenerCreateHelper reads FilterExpression from the listener-level request bag (request.ResourceProperties?.Get(\"FilterExpression\")) inside the per-destination Put loop, while ListenerRequestValidator and ListenerUpdateHelper read it per inline destination (d.Get/Value![\"FilterExpression\"]). The design models filterExpression per-destination (correct for validator + update + DynamoDbHelper round-trip), but this create-vs-update control-plane inconsistency is not on the DIVERGENCES hand-off list.",
+      "fix": "Add a divergence entry (e.g. D-14) noting ListenerCreateHelper reads FilterExpression at listener level while the validator/update read it per inline destination; L1 keeps filterExpression on the inline destination (correct per validator + update); the create-path mismatch is a control-plane bug for follow-up. No L1 API/wire change (no example uses FilterExpression)."
+    },
+    {
+      "id": 2,
+      "severity": "NIT",
+      "title": "attrDestinationNames list-token consumption caveat unstated",
+      "location": "design.md CfnListener output attributes, 'Getter return types' paragraph",
+      "problem": "attrDestinationNames is correctly modeled as a string-list token via Fn.getAtt(...).toStringList() (response.Data[\"DestinationNames\"] is a JSON array; consumed via Fn::Select in event-bridge/coap-demo/blink/radius). The design does not state that, unlike attrPort, a custom-resource list GetAtt token must be consumed with list-aware intrinsics (Fn::Select/Fn::Join) and not inside an Fn::Sub scalar string context.",
+      "fix": "Add a sentence to the attrDestinationNames note: it is a list token; consume with Fn.select/Fn.join, not inside an Fn.sub string interpolation. No API change."
+    }
+  ],
+  "reviewDoc": "c:\\Users\\leeha\\source\\proxylity\\cdk\\.agents\\tasks\\cdk-udp-gateway-l1\\design-review.md"
+}
