@@ -2,9 +2,6 @@
 src/
 test/
 .agents/
-build/
-scripts/
-buildspec.yml
 .projenrc.ts
 tsconfig.json
 tsconfig.dev.json
