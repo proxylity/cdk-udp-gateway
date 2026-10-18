@@ -18,17 +18,22 @@ Toolchain: Node v24.20.0 / npm 11.19.0
 
 ## Before → After
 
-| Metric | Before | After |
-|---|---|---|
-| Total advisories | 43 | 31 |
-| Moderate | 7 | 22 |
-| High | 36 | 9 |
+| Metric | Before | After (dev-dep hardening) | After (js-yaml@4 override) |
+|---|---|---|---|
+| Total advisories | 43 | 31 | 11 |
+| Moderate | 7 | 22 | 2 |
+| High | 36 | 9 | 9 |
 
-The total dropped by 12. The moderate/high split shifted because the regenerated lockfile collapsed
-the stale duplicated jsii-rosetta / jest trees into single nodes and npm re-rated several
-`aws-cdk-lib`-floored advisories; the remaining set is now cleanly attributable to three documented
-categories (below). All advisories that were clearable by bumping a dependency we own have been
-cleared.
+The first pass (dev-dep hardening) dropped the total from 43 to 31; the moderate/high split shifted
+because the regenerated lockfile collapsed the stale duplicated jsii-rosetta / jest trees into single
+nodes and npm re-rated several `aws-cdk-lib`-floored advisories.
+
+A second, targeted pass added a `js-yaml: ^4.0.0` override (see Overrides) that eliminated the entire
+jest/istanbul coverage-config cluster rooted at `sprintf-js` (former residual S1), dropping the total
+from 31 to **11 (2 moderate, 9 high)**. The remaining set is now cleanly attributable to just two
+documented categories: the `aws-cdk-lib`-floor advisories (A1–A11) and the jsii 5.9 toolchain
+`braces` chain (J1). All advisories that were clearable without raising the held `aws-cdk-lib` floor
+or moving to jsii 6 / TypeScript 6.0 have been cleared.
 
 ## Dependencies changed (all devDependencies / build-time only)
 
@@ -55,11 +60,14 @@ jest / istanbul coverage chain (neither appears under `aws-cdk-lib`):
 | Override | Reason |
 |---|---|
 | `test-exclude: ^8.0.0` | `babel-plugin-istanbul@8` pulled `test-exclude@7.0.2` → `glob@10.5.0`, which emitted a **deprecation warning** on install. `test-exclude@8` uses `glob@^13` / `minimatch@^10` (current), clearing the deprecation. |
-| `sprintf-js: ^1.1.3` | Pins the jest/istanbul coverage chain to the **newest published** `sprintf-js`. (This does not clear GHSA-hp3w-g68c-fv3c — see residual S1 — because every published `sprintf-js` is still in-range; it only guarantees newest.) |
+| `js-yaml: ^4.0.0` | `@istanbuljs/load-nyc-config` depends on `js-yaml@^3`, which pulls `argparse@1 → sprintf-js` — the root of the entire jest/istanbul coverage cluster (former residual S1, GHSA-hp3w-g68c-fv3c). This repo does **not** use nyc/istanbul coverage config (no `.nycrc*`, no nyc config in `jest.config.js`/`package.json`), so the `load-nyc-config → js-yaml@3` path is dead weight here. Forcing `js-yaml@4.3.2` resolves cleanly, switches the subtree to `argparse@2`, and **drops the `sprintf-js` dependency entirely**. Verified `jest --coverage` still works, so istanbul instrumentation is unaffected. |
 
-Both overrides were verified end-to-end: `npm ci` in sync, lint/compile/test/package all pass, the
-golden synth test unchanged, and the shipped package / public API unchanged. Neither override touches
-anything under `aws-cdk-lib`.
+The former `sprintf-js: ^1.1.3` override was **removed** — with `js-yaml@4` forced, no path in the
+tree pulls `sprintf-js` at all (`npm ls sprintf-js` reports nothing), so the override is dead.
+
+All overrides were verified end-to-end: `npm ci` in sync, lint/compile/test/package all pass,
+`jest --coverage` passes (27/27, istanbul instrumentation intact), the golden synth test unchanged,
+and the shipped package / public API unchanged. No override touches anything under `aws-cdk-lib`.
 
 ## Intentional decisions
 
@@ -79,12 +87,26 @@ anything under `aws-cdk-lib`.
   so eslint 10's main breaking change (eslintrc removal) does not apply; `typescript-eslint@8.71.2`
   peers accept eslint 10 and TypeScript 5.9. No new eslint 10 `recommended` rule flagged `src`/`test`.
 
+## Cleared: the jest/istanbul `sprintf-js` cluster (former residual S1)
+
+The earlier pass left the jest/istanbul coverage chain as residual S1 (`sprintf-js`,
+GHSA-hp3w-g68c-fv3c), reached via
+`ts-jest > @jest/transform > babel-plugin-istanbul > @istanbuljs/load-nyc-config > js-yaml@3 > argparse@1 > sprintf-js`,
+and conservatively declined to override `js-yaml@4` out of caution it might break coverage runs. That
+caution was unnecessary here: this repo loads **no** nyc config (empirically confirmed — no `.nycrc*`
+in the repo, and `jest.config.js` is plain ts-jest with no coverage thresholds), so the
+`load-nyc-config → js-yaml@3` path never executes. Forcing `js-yaml@4.3.2` (which uses `argparse@2`
+and has no `sprintf-js` dependency) resolves cleanly and removes the whole cluster from the tree. The
+former S1 advisory, plus the `@jest/*`, `jest-*`, `babel-jest`, `babel-plugin-istanbul`,
+`@istanbuljs/load-nyc-config`, `js-yaml`, `argparse`, and `ts-jest` advisories that were flagged only
+as the **path** to `sprintf-js`, are now gone from `npm audit`. `jest --coverage` was verified to
+still pass (27/27), confirming istanbul instrumentation is intact.
+
 ## Residual advisories (after cleanup)
 
 All residuals are build-time-only. Categories:
 `aws-cdk-lib-floor-unused-construct` (peer floor, construct unused),
-`jsii-toolchain-transitive` (pinned by jsii 5.9 line),
-`upstream-unpatched` (no fixed version published at any release).
+`jsii-toolchain-transitive` (pinned by jsii 5.9 line).
 
 | # | Package | Severity | Advisory | Dependency path | Category | Why it does not affect consumers |
 |---|---|---|---|---|---|---|
@@ -100,22 +122,30 @@ All residuals are build-time-only. Categories:
 | A10 | minimatch | high (GHSA-3ppc-4f35-3m26, -7r86-cg39-jmmj, -23c5-xmqv-rm74) | ReDoS | `aws-cdk-lib > minimatch` | aws-cdk-lib-floor-unused-construct | Nested under aws-cdk-lib floor; held per A1. |
 | A11 | yaml | moderate | GHSA-48c2-rrv3-qjmp (stack overflow via nested collections) | `aws-cdk-lib > yaml` | aws-cdk-lib-floor-unused-construct | Nested under aws-cdk-lib floor; held per A1. |
 | J1 | braces | high | GHSA-vfj7-8cjw-p6xm (stack-exhaustion DoS) | `jsii-pacmak > jsii-rosetta > fast-glob > micromatch > braces` | jsii-toolchain-transitive | Pulled only by the jsii 5.9 packaging toolchain. `braces@3.0.3` is the newest published and is still in-range (`<=3.0.3`) — upstream-unpatched. Fixing it would require jumping to jsii 6 (TypeScript 6.0), deferred per J1. `fast-glob` / `micromatch` appear in the audit summary only as the path to this single `braces` advisory. |
-| S1 | sprintf-js | moderate | GHSA-hp3w-g68c-fv3c (DoS via unbounded precision specifiers) | `ts-jest > @jest/transform > babel-plugin-istanbul > @istanbuljs/load-nyc-config > js-yaml > argparse > sprintf-js` | upstream-unpatched | Build-time coverage-config loader only; never reached by this package's `jest` run (no `.nycrc.yml`). Advisory range is `<=1.1.3` and `1.1.3` is the **newest published release** — there is no fixed version to bump to. The whole jest/istanbul cluster shown in `npm audit` (@jest/*, jest-*, babel-jest, babel-plugin-istanbul, @istanbuljs/load-nyc-config, js-yaml, argparse, ts-jest) is a transit of this one root; it clears when upstream ships a patched `sprintf-js`. We do not force an API-incompatible `js-yaml@4` override, which would reshape the tree but risk silently breaking coverage runs. |
+
+Post-override `npm audit` reports **11 advisories (2 moderate, 9 high)**: `aws-cdk-lib`, `ajv`,
+`brace-expansion`, `fast-uri`, `minimatch`, and `yaml` (all under the `aws-cdk-lib@2.160.0` floor,
+A1–A11), plus `jsii-pacmak`, `jsii-rosetta`, `fast-glob`, `micromatch`, and `braces` (the jsii 5.9
+chain, J1). The flagged `minimatch@3.1.2` / `brace-expansion@1.1.11` resolve only under
+`aws-cdk-lib`; the jest/eslint/typescript-eslint copies are the current patched `minimatch@10` /
+`brace-expansion@5` and are not flagged.
 
 ### No acceptable alternative remains
 
 Every advisory above is either (a) under the intentionally-held `aws-cdk-lib`/`constructs` floor and
-names a construct this library does not use, (b) pinned by the jsii 5.9 toolchain and upstream-
-unpatched on that line, or (c) an upstream-unpatched package with no fixed release at any version.
-Nothing else survives: all jest 29, eslint 9, and stale-lock residuals were cleared by the bumps.
+names a construct this library does not use, or (b) pinned by the jsii 5.9 toolchain and upstream-
+unpatched on that line. Nothing else survives: all jest 29, eslint 9, stale-lock, and jest/istanbul
+`sprintf-js`-cluster residuals were cleared by the dependency bumps and the `js-yaml@4` override.
 
 ## Maintenance
 
 Refresh this file whenever the dev toolchain is bumped. On each bump, re-run
 `npm audit --json` and re-check whether:
 
-- a newer `sprintf-js` (> 1.1.3) ships a fix for GHSA-hp3w-g68c-fv3c (residual S1), or
-  `@istanbuljs/load-nyc-config` moves to `js-yaml@4` (dropping the `sprintf-js` chain);
 - the jsii 5.9 line (or an eventual, deliberate jsii 6 / TypeScript 6.0 move) drops the
   `jsii-rosetta > fast-glob > braces` chain (residual J1);
-- the `aws-cdk-lib` floor is ever intentionally raised (decision A1), which would clear A1–A11.
+- the `aws-cdk-lib` floor is ever intentionally raised (decision A1), which would clear A1–A11;
+- `@istanbuljs/load-nyc-config` ever ships a release that depends on `js-yaml@4` natively, which
+  would let the `js-yaml: ^4.0.0` override be dropped (it is currently needed to force v4 over the
+  package's declared `js-yaml@^3`). The override is only safe because this repo loads no nyc config —
+  if a `.nycrc*` is ever added, re-verify coverage still loads correctly under `js-yaml@4`.
