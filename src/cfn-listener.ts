@@ -142,7 +142,7 @@ export interface DestinationArguments {
   readonly positionPropertyExpressions?: { [name: string]: string };
   /** `Arguments.TimestampExpression`. */
   readonly timestampExpression?: string;
-  /** `Arguments.TimeUnit` — `seconds` or `milliseconds`. */
+  /** `Arguments.TimestampTimeUnit` — `seconds` or `milliseconds`. */
   readonly timeUnit?: string;
 }
 
@@ -498,7 +498,7 @@ function argumentsToWire(a?: DestinationArguments): { [key: string]: unknown } |
     ['AccuracyExpression', a.accuracyExpression],
     ['PositionPropertyExpressions', a.positionPropertyExpressions],
     ['TimestampExpression', a.timestampExpression],
-    ['TimeUnit', a.timeUnit],
+    ['TimestampTimeUnit', a.timeUnit],
   ]);
 }
 

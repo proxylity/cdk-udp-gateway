@@ -1,6 +1,11 @@
 import { Stack } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { Listener, ListenerProtocol, LocationTrackerDestination } from '../../src';
+import {
+  Listener,
+  ListenerProtocol,
+  LocationTimeUnit,
+  LocationTrackerDestination,
+} from '../../src';
 
 /**
  * L2 re-authoring of `examples/location-service`: a UDP listener delivering device positions to an
@@ -25,6 +30,7 @@ export class L2LocationServiceStack extends Stack {
           deviceIdExpression: 'utf8[0:2]',
           latitudeExpression: 'i16le[2:4]',
           longitudeExpression: 'i16le[4:6]',
+          timeUnit: LocationTimeUnit.MILLISECONDS,
           positionPropertyExpressions: {
             foo: 'u16le[6:8]',
             bar: 'utf8[8:10]',

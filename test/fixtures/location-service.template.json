@@ -41,6 +41,7 @@
           "DeviceIdExpression": "utf8[0:2]",
           "LatitudeExpression": "i16le[2:4]",
           "LongitudeExpression": "i16le[4:6]",
+          "TimestampTimeUnit": "milliseconds",
           "PositionPropertyExpressions": {
             "foo": "u16le[6:8]",
             "bar": "utf8[8:10]"

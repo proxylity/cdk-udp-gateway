@@ -163,7 +163,7 @@ describe('L2 synth-time validation (design §8) — one negative test per rule',
             timeUnit: 'minutes' as unknown as LocationTimeUnit,
           }),
       ),
-    ).toThrow("When present, TimeUnit must be one of 'seconds' or 'milliseconds.'");
+    ).toThrow("When present, TimestampTimeUnit must be one of 'seconds' or 'milliseconds.'");
   });
 
   // §8.15 — ArnDestination arn vs arnMap mutual exclusion.

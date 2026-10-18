@@ -30,10 +30,7 @@ export interface LocationTrackerDestinationProps extends CommonDestinationProps 
   readonly positionPropertyExpressions?: { [name: string]: string };
   /** `Arguments.TimestampExpression`. */
   readonly timestampExpression?: string;
-  /**
-   * `Arguments.TimeUnit` — the unit for {@link timestampExpression}. May be accepted but not yet
-   * honored by the service; do not rely on it to change timestamp interpretation for now.
-   */
+  /** `Arguments.TimestampTimeUnit` — the unit for {@link timestampExpression}. */
   readonly timeUnit?: LocationTimeUnit;
 }
 
@@ -114,7 +111,7 @@ export class LocationTrackerDestination extends DestinationBase {
       this.props.timeUnit !== LocationTimeUnit.SECONDS &&
       this.props.timeUnit !== LocationTimeUnit.MILLISECONDS
     ) {
-      throw new Error("When present, TimeUnit must be one of 'seconds' or 'milliseconds.'");
+      throw new Error("When present, TimestampTimeUnit must be one of 'seconds' or 'milliseconds.'");
     }
   }
 

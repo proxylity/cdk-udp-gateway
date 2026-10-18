@@ -5,16 +5,12 @@
 // =============================================================================================
 // Arguments intentionally NOT surfaced by L2
 // =============================================================================================
-// Two argument areas are deliberately omitted from the L2 API so a config can never be rejected
-// at deploy or silently do nothing:
+// The DynamoDB key-template arguments are deliberately omitted from the L2 API so a config can
+// never be rejected at deploy or silently do nothing:
 //
 // - DynamoDB custom partition/sort key templates: the service does not currently accept these as
 //   listener arguments, so emitting them would be rejected. A DynamoDB destination therefore uses
 //   the service's default key handling today. They can be surfaced if the service accepts them.
-//
-// - Location `TimeUnit`: L2 surfaces `timeUnit` -> wire `TimeUnit`, which the service accepts, but
-//   the value may not yet change timestamp interpretation at runtime. Documented so callers are
-//   not surprised; see the note on `LocationTrackerDestinationProps.timeUnit`.
 // =============================================================================================
 
 import { Token } from 'aws-cdk-lib';

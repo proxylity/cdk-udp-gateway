@@ -43,7 +43,7 @@ export enum WebRtcSignalingMode {
   PUBLIC = 'public',
 }
 
-/** Location tracker timestamp unit (`Arguments.TimeUnit`). */
+/** Location tracker timestamp unit (`Arguments.TimestampTimeUnit`). */
 export enum LocationTimeUnit {
   /** Timestamps are expressed in seconds. */
   SECONDS = 'seconds',
