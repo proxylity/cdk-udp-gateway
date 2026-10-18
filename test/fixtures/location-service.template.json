@@ -1,0 +1,52 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["udp"],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Delivers to the tracker; no response is generated.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 0.1
+        },
+        "LogGroupName": { "Ref": "Logs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Tracker", "Arn"]
+        },
+        "Arguments": {
+          "DeviceIdExpression": "utf8[0:2]",
+          "LatitudeExpression": "i16le[2:4]",
+          "LongitudeExpression": "i16le[4:6]",
+          "PositionPropertyExpressions": {
+            "foo": "u16le[6:8]",
+            "bar": "utf8[8:10]"
+          }
+        }
+      }
+    ]
+  }
+}

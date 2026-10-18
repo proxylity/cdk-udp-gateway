@@ -6,11 +6,8 @@ operating listener servers.
 
 This is the **L1** layer: thin, un-opinionated, 1:1 wrappers of the Proxylity UDP Gateway
 CloudFormation custom resources. Each construct emits exactly one `Custom::ProxylityUdpGateway*`
-resource with the property keys the control plane reads, in the PascalCase shape it expects on the
-wire. L1 adds no derived IAM, no invented enums, and no defaults beyond what the resource itself
-applies. Where the hand-written example templates or docs diverge from the control-plane
-implementation, the implementation is authoritative; divergences are tracked in
-`.agents/tasks/cdk-udp-gateway-l1/DIVERGENCES.md`.
+resource with the property keys the service reads, in the PascalCase shape it expects on the wire.
+L1 adds no derived IAM, no invented enums, and no defaults beyond what the resource itself applies.
 
 > You must be subscribed to Proxylity UDP Gateway in AWS Marketplace to deploy stacks that use these
 > constructs.
@@ -36,8 +33,7 @@ Peer dependencies: `aws-cdk-lib@^2.160.0` and `constructs@^10.0.0`.
 | `CfnPacketSource`   | `Custom::ProxylityUdpGatewayPacketSource`     | Subscribes a listener to an SNS topic for server-initiated push. |
 | `ProxylityConfig`   | (helper, not a resource)                      | Injects the account/region config mapping and resolves `ServiceToken`/`ServiceRole`/`ApiKey`. |
 
-> `Custom::ProxylityUdpGatewayDestination` is **reserved / not shipped**: the control-plane handler
-> currently throws `NotImplementedException` (DIVERGENCES D-05). Create destinations inline via
+> A standalone top-level destination resource is **not shipped**: destinations are created inline via
 > `CfnListener.destinations`.
 
 ## Usage
@@ -121,15 +117,13 @@ tokens; wrap with `Token.asNumber(...)` if you need a number.
 ### Protocols
 
 `protocols` must contain exactly one of `udp`, `wg`, `dtls`, or `webrtc`. Protocol-specific
-properties are optional members on `CfnListenerProps`; the control plane rejects invalid
-cross-protocol combinations. See the JSDoc on each property for the normative control-plane behavior
-and the relevant DIVERGENCES note.
+properties are optional members on `CfnListenerProps`; the service rejects invalid cross-protocol
+combinations. See the JSDoc on each property for its behavior.
 
 ## Fidelity
 
-L1 is faithful to the control plane: if the resource accepts an input, L1 emits it; if the resource
+L1 is faithful to the service: if the resource accepts an input, L1 emits it; if the resource
 rejects it, the stack event explains why. L1 performs only one client-side check — an inline
 destination may not set both `destinationArn` and `destinationArnMap` (both map to the single
 `DestinationArn` wire key). Everything else (CIDR/ARN/base64 formats, name regex, enum membership,
-numeric ranges, cross-field requirements) is left to the resource. Known schema/docs-vs-implementation
-divergences are catalogued in `.agents/tasks/cdk-udp-gateway-l1/DIVERGENCES.md` (D-01 … D-14).
+numeric ranges, cross-field requirements) is left to the resource.

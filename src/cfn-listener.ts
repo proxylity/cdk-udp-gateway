@@ -4,7 +4,7 @@ import { wireObject } from './private/to-wire';
 
 /**
  * Client-access restrictions for a listener (`ClientRestrictions`). Omitting restrictions admits no
- * traffic (a server-side semantic enforced by the control plane).
+ * traffic (a server-side semantic enforced by the service).
  */
 export interface ClientRestrictions {
   /**
@@ -24,12 +24,11 @@ export interface ListenerRole {
   /** CloudFormation `Role.Arn` — IAM role ARN the Proxylity ServiceRole assumes. */
   readonly arn: string;
   /**
-   * CloudFormation `Role.Duration` — assumed-session duration as a .NET `TimeSpan` string
-   * (`"[d.]hh:mm:ss"`, e.g. `"1:00:00"` = one hour, `"0:30:00"` = 30 minutes). The control plane
-   * parses it with `TimeSpan.Parse` and defaults to `"1:00:00"` when omitted. This is NOT minutes
-   * or seconds. See DIVERGENCES D-01.
+   * CloudFormation `Role.Duration` — assumed-session duration as a duration string in
+   * `"[d.]hh:mm:ss"` form (e.g. `"1:00:00"` = one hour, `"0:30:00"` = 30 minutes). Defaults to
+   * `"1:00:00"` (one hour) when omitted. This is NOT minutes or seconds.
    *
-   * @default - control plane applies "1:00:00" (one hour)
+   * @default - "1:00:00" (one hour; the service default)
    */
   readonly duration?: string;
 }
@@ -51,17 +50,17 @@ export interface WireGuardPeer {
 export interface Batching {
   /**
    * `Batching.Count` — maximum messages per batch (integer). Resource default 100.
-   * @default - control plane applies 100
+   * @default - 100 (service default)
    */
   readonly count?: number;
   /**
    * `Batching.TimeoutInSeconds` — maximum wait in fractional seconds. Resource default 0.25.
-   * @default - control plane applies 0.25
+   * @default - 0.25 (service default)
    */
   readonly timeoutInSeconds?: number;
   /**
    * `Batching.SizeInMB` — advisory maximum batch size in fractional megabytes. Resource default 1.0.
-   * @default - control plane applies 1.0
+   * @default - 1.0 (service default)
    */
   readonly sizeInMB?: number;
 }
@@ -83,8 +82,8 @@ export interface DestinationArnMap {
 
 /**
  * Service-specific settings for an inline destination (`Destinations[].Arguments`). L1 exposes the
- * complete known-property set the validator allows; the control plane enforces which apply to which
- * destination service ARN. `Formatter` enums (`base64`/`hex`/`ascii`/`utf8`) are documented in
+ * full set of accepted argument properties; the service enforces which apply to which destination
+ * service ARN. `Formatter` enums (`base64`/`hex`/`ascii`/`utf8`) are documented in
  * JSDoc but typed as `string` — L1 invents no enums.
  */
 export interface DestinationArguments {
@@ -159,7 +158,7 @@ export interface ListenerDestination {
   readonly name?: string;
   /** `Destinations[].Description`. */
   readonly description?: string;
-  /** `Destinations[].Role` — `{ Arn, Duration? }`. `Duration` default `"1:00:00"` (D-01). */
+  /** `Destinations[].Role` — `{ Arn, Duration? }`. `Duration` default `"1:00:00"` (one hour). */
   readonly role?: ListenerRole;
   /**
    * `Destinations[].DestinationArn` — a single ARN string. Mutually exclusive with
@@ -189,8 +188,8 @@ export interface ListenerDestination {
 }
 
 /**
- * Properties for {@link CfnListener}. A flat property bag mirroring the shape the control-plane
- * Lambda accepts; protocol-specific members are optional on this single interface rather than split
+ * Properties for {@link CfnListener}. A flat property bag mirroring the shape the service accepts;
+ * protocol-specific members are optional on this single interface rather than split
  * into subtypes (that is an L2 concern). The resource rejects invalid cross-protocol combinations.
  */
 export interface CfnListenerProps {
@@ -203,14 +202,14 @@ export interface CfnListenerProps {
   readonly apiKey: string;
   /**
    * CloudFormation `Protocols` — array containing EXACTLY ONE of `udp` | `wg` | `dtls` | `webrtc`.
-   * The control-plane validator rejects more than one. L1 does not enforce the cardinality.
+   * The service rejects more than one. L1 does not enforce the cardinality.
    */
   readonly protocols: string[];
 
   /**
-   * CloudFormation `Name`. If omitted, the resource generates a name. The control-plane validator
-   * matches the (unanchored) regex `[a-zA-Z][a-zA-Z0-9 _\-]+` with `Regex.IsMatch`. L1 does not
-   * validate `Name` client-side.
+   * CloudFormation `Name`. If omitted, the resource generates a name. The service accepts names
+   * matching the (unanchored) pattern `[a-zA-Z][a-zA-Z0-9 _\-]+`. L1 does not validate `Name`
+   * client-side.
    */
   readonly name?: string;
   /** CloudFormation `Description` — free text; resource generates one if omitted. */
@@ -297,7 +296,7 @@ const RESOURCE_TYPE = 'Custom::ProxylityUdpGatewayListener';
  * L1 construct for `Custom::ProxylityUdpGatewayListener`.
  *
  * A faithful 1:1 wrapper of the Proxylity UDP Gateway Listener custom resource. It emits exactly the
- * PascalCase wire keys the control-plane Lambda reads and adds no derived IAM, invented enums, or
+ * PascalCase wire keys the service reads and adds no derived IAM, invented enums, or
  * defaults beyond what the resource itself applies.
  */
 export class CfnListener extends Construct {
@@ -531,7 +530,7 @@ function destinationArnToWire(d: ListenerDestination): unknown {
     }
     return map;
   }
-  // Neither set: emit an explicit empty object, matching the control-plane default.
+  // Neither set: emit an explicit empty object, matching the service default.
   return {};
 }
 

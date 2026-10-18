@@ -1,0 +1,43 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["udp"],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Delivers to the packet counter lambda, which returns a single response to each distinct client IP address.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 1000,
+          "TimeoutInSeconds": 1
+        },
+        "MetricsEnabled": true,
+        "DestinationArn": {
+          "Fn::GetAtt": ["PacketCounterLambda", "Arn"]
+        }
+      }
+    ]
+  }
+}

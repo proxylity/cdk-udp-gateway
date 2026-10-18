@@ -1,0 +1,67 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["wg"],
+    "DecapsulatedDelivery": true,
+    "Peers": [
+      {
+        "PublicKey": { "Ref": "PeerPublicKey" },
+        "AllowedIPs": ["0.0.0.0/0", "::/0"]
+      }
+    ],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Name": "SyslogFirehose",
+        "Description": "This destination sends SYSLOG messages to S3 via Firehose for archival.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "utf8",
+        "Batching": {
+          "Count": 1000,
+          "TimeoutInSeconds": 30
+        },
+        "LogGroupName": { "Ref": "DestinationErrorLogs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Firehose", "Arn"]
+        }
+      },
+      {
+        "Name": "SyslogLogs",
+        "Description": "This destination sends SYSLOG messages to CloudWatch.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "utf8",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 10
+        },
+        "LogGroupName": { "Ref": "DestinationErrorLogs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Logs", "Arn"]
+        }
+      }
+    ]
+  }
+}

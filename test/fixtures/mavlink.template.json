@@ -1,0 +1,93 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["udp"],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Extracts GPS position and telemetry from MAVLink v2 GPS_RAW_INT packets and writes to the Location Service tracker. FilterExpression ensures only GPS_RAW_INT (msg 24) packets are delivered -- other message types are silently dropped.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "FilterExpression": "[0] == 0xFD && [7] == 0x18 && [8] == 0x00 && [9] == 0x00 ?? 0x00",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 0.5
+        },
+        "LogGroupName": { "Ref": "Logs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Tracker", "Arn"]
+        },
+        "Arguments": {
+          "DeviceIdExpression": "[5:7]",
+          "LatitudeExpression": "i32le[18:22]",
+          "LongitudeExpression": "i32le[22:26]",
+          "ScaleFactor": 0.0000001,
+          "PositionPropertyExpressions": {
+            "alt_mm": "i32le[26:30]",
+            "vel_cms": "u16le[34:36]",
+            "satellites": "u8[39]"
+          }
+        }
+      },
+      {
+        "Description": "Delivers raw MAVLink packets to the FIFO queue with per-drone ordering. A Lambda function consumes the queue, decodes GPS_RAW_INT payloads, and publishes position events to AppSync Events for real-time browser display.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "hex",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 1.0
+        },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "Logs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["FifoQueue", "Arn"]
+        },
+        "Arguments": {
+          "SendRaw": true,
+          "UseMessageAttributes": true,
+          "MessageGroupIdExpression": "[0] == 0xFE ? [3:5] : ([0] == 0xFD ? [5:7] : 0xFFFF)",
+          "MessageGroupIdFormatter": "hex"
+        }
+      },
+      {
+        "Description": "Archives all raw MAVLink packets to S3 via Firehose for durable storage and batch processing.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "hex",
+        "Batching": {
+          "Count": 100,
+          "TimeoutInSeconds": 1.0
+        },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "Logs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["DeliveryStream", "Arn"]
+        }
+      }
+    ]
+  }
+}

@@ -21,7 +21,7 @@ describe('CfnPacketSource', () => {
       ApiKey: 'key',
       ListenerName: 'my-listener',
       SnsTopicSource: {
-        // Role is a bare string ARN, NOT a { Arn } object (D-08).
+        // Role is a bare string ARN, NOT a { Arn } object.
         TopicArn: 'arn:aws:sns:us-east-1:111122223333:topic',
         Role: 'arn:aws:iam::111122223333:role/r',
       },

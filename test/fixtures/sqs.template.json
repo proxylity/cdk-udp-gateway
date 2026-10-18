@@ -1,0 +1,68 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["udp"],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Delivers to the standard queue with default delivery behavior (JSON payload, no attributes).",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 1
+        },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "StandardQueueLogs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Queue", "Arn"]
+        }
+      },
+      {
+        "Description": "Delivers to the FIFO queue with raw payload delivery (UTF-8 format), messages attributes for metadata (source IP/port, domain, ingress port) and the MessageGroupId extracted from the payload (first payload byte as a hex string). MessageDeduplicationId is also extracted from the payload (all but the first byte, base64 encoded).",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 1
+        },
+        "Formatter": "utf8",
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "FifoQueueLogs" },
+        "DestinationArn": {
+          "Fn::GetAtt": ["FifoQueue", "Arn"]
+        },
+        "Arguments": {
+          "SendRaw": true,
+          "UseMessageAttributes": true,
+          "MessageGroupIdExpression": "[0:1]",
+          "MessageGroupIdFormatter": "hex",
+          "MessageDeduplicationIdExpression": "[1:]",
+          "MessageDeduplicationIdFormatter": "base64"
+        }
+      }
+    ]
+  }
+}

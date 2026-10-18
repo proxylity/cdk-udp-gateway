@@ -28,7 +28,7 @@ const RESOURCE_TYPE = 'Custom::ProxylityUdpGatewayDestinationArn';
  * L1 construct for `Custom::ProxylityUdpGatewayDestinationArn`.
  *
  * Registers one ARN for one destination in one ingress region. A faithful 1:1 wrapper that passes
- * the three strings through; the control plane enforces any registration rules at deploy time.
+ * the three strings through; the service enforces any registration rules at deploy time.
  */
 export class CfnDestinationArn extends Construct {
   /** The underlying custom resource. */

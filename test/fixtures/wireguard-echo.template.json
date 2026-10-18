@@ -1,0 +1,52 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["wg"],
+    "Peers": [
+      {
+        "PublicKey": { "Ref": "Peer1PublicKey" },
+        "AllowedIPs": ["0.0.0.0/0", "::/0"]
+      },
+      {
+        "PublicKey": { "Ref": "Peer2PublicKey" },
+        "AllowedIPs": ["0.0.0.0/0", "::/0"]
+      }
+    ],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Delivers to the wireguard echo lambda, which responds to ICMP pings and UDP.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 100,
+          "TimeoutInSeconds": 0.1
+        },
+        "DestinationArn": {
+          "Fn::GetAtt": ["Lambda", "Arn"]
+        }
+      }
+    ]
+  }
+}

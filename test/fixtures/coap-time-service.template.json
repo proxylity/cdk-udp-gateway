@@ -1,0 +1,67 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["wg"],
+    "Peers": [
+      {
+        "PublicKey": { "Ref": "WireGuardClientPublicKey" },
+        "AllowedIPs": ["0.0.0.0/0", "::/0"]
+      }
+    ],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "DecapsulatedDelivery": true,
+    "Destinations": [
+      {
+        "Description": "Decodes each inbound CoAP packet and delivers the parsed request to the time service state machine, which returns an ACK response for GET /time requests.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "coap",
+        "Batching": {
+          "Count": 100,
+          "TimeoutInSeconds": 0.5
+        },
+        "DestinationArn": {
+          "Fn::GetAtt": ["CoapTimeServiceStateMachine", "Arn"]
+        }
+      }
+    ]
+  },
+  "PacketSource": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Enabled": true,
+    "ListenerName": { "Ref": "CoAPListener" },
+    "SnsTopicSource": {
+      "Role": {
+        "Fn::GetAtt": ["DestinationRole", "Arn"]
+      },
+      "TopicArn": {
+        "Fn::GetAtt": ["ObserveNotifyTopic", "TopicArn"]
+      }
+    }
+  }
+}

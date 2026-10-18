@@ -3,11 +3,11 @@
  *
  * These are NOT exported from the package's public API. They centralize the single L1 invariant:
  * convert idiomatic camelCase CDK props into the exact PascalCase CloudFormation wire keys the
- * Proxylity control-plane Lambda reads (see `proxylity-control/src/listener-resource-lambda`).
+ * Proxylity UDP Gateway service reads.
  *
  * Native `boolean`/`number` values are passed through unchanged. CloudFormation stringifies custom
- * resource property values on the wire and the C# validator parses them with `bool.TryParse` /
- * `float.Parse`, so no manual pre-stringify is required (and the example templates emit
+ * resource property values on the wire and the service parses the stringified booleans/numbers
+ * back, so no manual pre-stringify is required (and the example templates emit
  * `MetricsEnabled: true`, `Batching.Count: 1000` as native JSON).
  */
 

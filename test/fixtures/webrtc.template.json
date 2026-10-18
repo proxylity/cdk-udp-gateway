@@ -1,0 +1,45 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "Listener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["webrtc"],
+    "WebRtcSignalingMode": "public",
+    "RequireCookies": true,
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Echo each binary data-channel message to its originating session.",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 1,
+          "TimeoutInSeconds": 0.1
+        },
+        "MetricsEnabled": true,
+        "DestinationArn": {
+          "Fn::GetAtt": ["EchoLambda", "Arn"]
+        }
+      }
+    ]
+  }
+}

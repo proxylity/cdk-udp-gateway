@@ -1,0 +1,54 @@
+{
+  "Mappings": {
+    "ProxylityConfig": {
+      "Fn::Transform": {
+        "Name": "AWS::Include",
+        "Parameters": {
+          "Location": {
+            "Fn::Sub": "s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json"
+          }
+        }
+      }
+    }
+  },
+  "GlobalListener": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Protocols": ["udp"],
+    "ClientRestrictions": {
+      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+    },
+    "Destinations": [
+      {
+        "Description": "Delivers to the packet counter lambda using region-specific ARNs. All ARNs are mapped in the regional stacks (see packet-counter-regional.template.json).",
+        "Role": {
+          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
+        },
+        "Formatter": "base64",
+        "Batching": {
+          "Count": 10,
+          "TimeoutInSeconds": 1
+        },
+        "MetricsEnabled": true,
+        "DestinationArn": {}
+      }
+    ]
+  },
+  "RegionDestinationArn": {
+    "ServiceToken": {
+      "Fn::FindInMap": ["ProxylityConfig", { "Ref": "AWS::Region" }, "ServiceToken"]
+    },
+    "ApiKey": {
+      "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
+    },
+    "Destination": { "Ref": "DestinationId" },
+    "IngressRegionKey": { "Ref": "AWS::Region" },
+    "Arn": {
+      "Fn::GetAtt": ["PacketCounterLambda", "Arn"]
+    }
+  }
+}
