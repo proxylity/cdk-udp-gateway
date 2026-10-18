@@ -77,7 +77,8 @@
   },
   "bundledDependencies": [],
   "files": [
-    "lib",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
     ".jsii",
     "README.md"
   ]

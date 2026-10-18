@@ -36,15 +36,30 @@ Every publish job (`publish-npm`, `publish-pypi`, `publish-nuget`) runs with
 
 The npm job uses `npm publish --provenance --access public` with no `NODE_AUTH_TOKEN`.
 
+> **The source repository MUST be public.** `--provenance` signs a public, verifiable link from
+> the package to its source commit and build, so npm rejects it for a private repo with
+> `422 ... Unsupported GitHub Actions source repository visibility: "private". Only public source
+> repositories are supported when publishing with provenance.` Make the repository public before
+> the first npm release. (If you must publish while private, drop `--provenance` from
+> `release.yml` — but then there is no provenance attestation.)
+
 ## 3. PyPI trusted publishing
 
 1. Sign in to <https://pypi.org>.
-2. Add a **pending** (for a not-yet-existing project) or regular **trusted publisher** that
-   trusts:
-   - Repository: `proxylity/cdk-udp-gateway`
-   - Workflow: `.github/workflows/release.yml`
+2. For a project that does not exist yet, add a **pending publisher** (Account → Publishing).
+   A trusted publisher can only *create* a new project through a correctly-matched pending
+   publisher. Configure it to trust:
+   - PyPI **Project Name**: `proxylity-cdk-udp-gateway` — this MUST match the package's
+     `distName` exactly (see `package.json` → `jsii.targets.python.distName`). PyPI normalizes
+     case / `-` / `_`, so `proxylity_cdk_udp_gateway` in the built wheel filename is equivalent,
+     but a different name here causes a `400 Non-user identities cannot create new projects`
+     error (the OIDC auth succeeds, then project creation fails on the name mismatch).
+   - Owner: `proxylity`
+   - Repository: `cdk-udp-gateway`
+   - Workflow: `release.yml` (filename only, not a path)
    - Environment: `release`
-   - PyPI project / distribution name: `proxylity-cdk-udp-gateway`
+   If you hit the `400 Non-user identities cannot create new projects` error, the pending
+   publisher's Project Name does not match — delete and recreate it with the exact name above.
 
 The PyPI job uses `pypa/gh-action-pypi-publish` with no token.
 

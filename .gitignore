@@ -18,3 +18,6 @@ API.md
 # OS / editor
 .DS_Store
 *.swp
+
+# agent workflow task artifacts (internal process notes, not shipped or tracked)
+.agents/
