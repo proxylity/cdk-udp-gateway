@@ -19,8 +19,6 @@ L1 adds no derived IAM, no invented enums, and no defaults beyond what the resou
 | TypeScript / JavaScript | `npm install @proxylity/cdk-udp-gateway` |
 | Python     | `pip install proxylity-cdk-udp-gateway` (module `proxylity_cdk_udp_gateway`) |
 | .NET       | `dotnet add package Proxylity.CDK.UdpGateway` |
-| Java       | Maven `com.proxylity:cdk-udp-gateway` (package `com.proxylity.cdk.udpgateway`) |
-| Go         | `go get github.com/proxylity/cdk-udp-gateway` |
 
 Peer dependencies: `aws-cdk-lib@^2.160.0` and `constructs@^10.0.0`.
 
