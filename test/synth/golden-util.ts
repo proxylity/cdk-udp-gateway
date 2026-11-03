@@ -105,6 +105,14 @@ export function normalizeListenerProps(props: any): any {
   if (Array.isArray(p.Peers)) {
     p.Peers = p.Peers.map((peer: any) => ({ ...peer, PublicKey: KEY }));
   }
+  // Listener-level observability role and log group (Fn::GetAtt/Ref in an example, literals or
+  // imported ARNs in an L2 synth).
+  if (isObject(p.Role) && 'Arn' in p.Role) {
+    p.Role = { ...p.Role, Arn: ROLE };
+  }
+  if ('LogGroupName' in p) {
+    p.LogGroupName = LOG;
+  }
 
   if (Array.isArray(p.Destinations)) {
     p.Destinations = p.Destinations.map((d: any) => {

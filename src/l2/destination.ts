@@ -131,13 +131,19 @@ export abstract class DestinationBase implements IListenerDestination {
       return { role: this.commonProps.role, dependencies: [this.commonProps.role] };
     }
 
-    const role = createServiceRole(scope, id, listener.resolvedProxylityConfig);
+    // Several destinations of the same type on one listener all ask for the same id. Keep the first
+    // id as-is (so existing stacks keep their logical IDs) and number the rest: Id, Id2, Id3, ...
+    let uniqueId = id;
+    for (let n = 2; scope.node.tryFindChild(uniqueId) !== undefined; n++) {
+      uniqueId = `${id}${n}`;
+    }
+    const role = createServiceRole(scope, uniqueId, listener.resolvedProxylityConfig);
     grant(role);
     if (this.commonProps.metricsEnabled) {
       addMetricsGrant(role);
     }
     if (this.commonProps.logGroupName !== undefined) {
-      addLogsGrant(role);
+      addLogsGrant(role, this.commonProps.logGroupName);
     }
 
     const dependencies: IDependable[] = [role];

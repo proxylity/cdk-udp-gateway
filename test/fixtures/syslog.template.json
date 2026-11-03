@@ -18,49 +18,51 @@
     "ApiKey": {
       "Fn::FindInMap": ["ProxylityConfig", "Account", "ApiKey"]
     },
+    "Name": "syslog-us-east-1",
     "Protocols": ["wg"],
     "DecapsulatedDelivery": true,
     "Peers": [
-      {
-        "PublicKey": { "Ref": "PeerPublicKey" },
-        "AllowedIPs": ["0.0.0.0/0", "::/0"]
-      }
+      { "PublicKey": "<site-1 key>", "AllowedIPs": ["10.1.0.0/16"] },
+      { "PublicKey": "<site-2 key>", "AllowedIPs": ["10.2.0.0/16"] }
     ],
     "ClientRestrictions": {
-      "Networks": [{ "Ref": "ClientCidrToAllow" }]
+      "Networks": ["198.51.100.0/24"]
+    },
+    "MetricsEnabled": true,
+    "LogGroupName": { "Ref": "IngestErrors" },
+    "Role": {
+      "Arn": { "Fn::GetAtt": ["IngestListenerRole", "Arn"] }
     },
     "Destinations": [
       {
-        "Name": "SyslogFirehose",
-        "Description": "This destination sends SYSLOG messages to S3 via Firehose for archival.",
-        "Role": {
-          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
-        },
-        "Formatter": "utf8",
-        "Batching": {
-          "Count": 1000,
-          "TimeoutInSeconds": 30
-        },
-        "LogGroupName": { "Ref": "DestinationErrorLogs" },
-        "DestinationArn": {
-          "Fn::GetAtt": ["Firehose", "Arn"]
-        }
+        "Name": "syslog-us-east-1-archive",
+        "Description": "Original message bytes (base64) to the Object Lock archive through Firehose.",
+        "Role": { "Arn": { "Fn::GetAtt": ["IngestDestinationRole", "Arn"] } },
+        "DestinationArn": { "Fn::GetAtt": ["ArchiveStream", "Arn"] },
+        "Formatter": "base64",
+        "Batching": { "Count": 500, "TimeoutInSeconds": 10, "SizeInMB": 0.5 },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "IngestErrors" }
       },
       {
-        "Name": "SyslogLogs",
-        "Description": "This destination sends SYSLOG messages to CloudWatch.",
-        "Role": {
-          "Arn": { "Fn::GetAtt": ["DestinationRole", "Arn"] }
-        },
-        "Formatter": "utf8",
-        "Batching": {
-          "Count": 10,
-          "TimeoutInSeconds": 10
-        },
-        "LogGroupName": { "Ref": "DestinationErrorLogs" },
-        "DestinationArn": {
-          "Fn::GetAtt": ["Logs", "Arn"]
-        }
+        "Name": "syslog-us-east-1-logs",
+        "Description": "Parsed messages (syslog formatter) as JSON events in CloudWatch Logs.",
+        "Role": { "Arn": { "Fn::GetAtt": ["IngestDestinationRole", "Arn"] } },
+        "DestinationArn": { "Fn::GetAtt": ["IngestLogs", "Arn"] },
+        "Formatter": "syslog",
+        "Batching": { "Count": 200, "TimeoutInSeconds": 5, "SizeInMB": 0.5 },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "IngestErrors" }
+      },
+      {
+        "Name": "syslog-us-east-1-analytics",
+        "Description": "Parsed messages (syslog formatter) to Firehose for Parquet conversion.",
+        "Role": { "Arn": { "Fn::GetAtt": ["IngestDestinationRole", "Arn"] } },
+        "DestinationArn": { "Fn::GetAtt": ["AnalyticsStream", "Arn"] },
+        "Formatter": "syslog",
+        "Batching": { "Count": 500, "TimeoutInSeconds": 10, "SizeInMB": 0.5 },
+        "MetricsEnabled": true,
+        "LogGroupName": { "Ref": "IngestErrors" }
       }
     ]
   }

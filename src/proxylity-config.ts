@@ -1,3 +1,4 @@
+import * as cdk from 'aws-cdk-lib';
 import { Aws, CfnElement, Fn, Stack } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 
@@ -30,6 +31,24 @@ class ProxylityConfigMapping extends CfnElement {
       },
     };
   }
+}
+
+/**
+ * Newer aws-cdk-lib versions validate the synthesized template and warn that the mapping is a
+ * scalar (F0017) and that `Fn::FindInMap` references a missing mapping (F1012). Both are false
+ * positives: CloudFormation resolves the AWS::Include at deploy time. Acknowledge them for the stack
+ * when the `Validations` API exists (it doesn't in older aws-cdk-lib versions, which don't validate).
+ */
+function acknowledgeIncludedMapping(stack: Stack): void {
+  const validations = (cdk as unknown as { Validations?: { of(scope: Construct): { acknowledge(...rules: { id: string; reason: string }[]): void } } }).Validations;
+  if (!validations) {
+    return;
+  }
+  const reason = 'Mappings.ProxylityConfig is an AWS::Include of the Proxylity customer config, resolved by CloudFormation at deploy time.';
+  validations.of(stack).acknowledge(
+    { id: 'CloudFormation-Validate::F0017', reason },
+    { id: 'CloudFormation-Validate::F1012', reason },
+  );
 }
 
 /**
@@ -76,6 +95,7 @@ export class ProxylityConfig extends Construct {
 
     // Emit `Mappings.ProxylityConfig` with an `Fn::Transform` (AWS::Include) value, once per stack.
     new ProxylityConfigMapping(this, 'Mapping');
+    acknowledgeIncludedMapping(Stack.of(this));
   }
 
   /**

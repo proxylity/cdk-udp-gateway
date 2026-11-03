@@ -1,4 +1,5 @@
 import { Stack } from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import {
@@ -10,49 +11,63 @@ import {
 } from '../../src';
 
 /**
- * L2 re-authoring of `examples/syslog` (syslog-cw-s3). A WireGuard listener with
- * `DecapsulatedDelivery` and one peer, delivering to a Firehose delivery stream (UTF-8, archived to
- * S3 behind the stream) and to a CloudWatch Logs group.
+ * L2 shape of the listener in `examples/syslog` (now itself a CDK app built on these constructs). A
+ * WireGuard listener with `DecapsulatedDelivery`, per-site `AllowedIPs`, listener metrics and error
+ * logs, and three destinations: the original bytes (base64) to the archive Firehose stream, parsed
+ * syslog JSON to CloudWatch Logs, and parsed syslog JSON to the analytics (Parquet) Firehose stream.
+ * Like the example, it brings its own roles, so the listener entry carries no derived roles.
  */
 export class L2SyslogStack extends Stack {
   public readonly listener: Listener;
-
   constructor(scope: Construct, id: string) {
     super(scope, id);
-
-    const logGroup = logs.LogGroup.fromLogGroupArn(
+    const errors = '/proxylity-examples/syslog/syslog-us-east-1/errors';
+    const destinationRole = iam.Role.fromRoleArn(this, 'DestinationRole', 'arn:aws:iam::111122223333:role/syslog-destination');
+    const listenerRole = iam.Role.fromRoleArn(this, 'ListenerRole', 'arn:aws:iam::111122223333:role/syslog-listener');
+    const logsGroup = logs.LogGroup.fromLogGroupArn(
       this,
       'Logs',
-      'arn:aws:logs:us-east-1:111122223333:log-group:/proxylity-examples/syslog-cw',
+      'arn:aws:logs:us-east-1:111122223333:log-group:/proxylity-examples/syslog/syslog-us-east-1/logs',
     );
+    const common = { role: destinationRole, metricsEnabled: true, logGroupName: errors };
 
-    this.listener = new Listener(this, 'SyslogListener', {
+    this.listener = new Listener(this, 'Listener', {
+      listenerName: 'syslog-us-east-1',
       protocol: ListenerProtocol.wireGuard({
         decapsulatedDelivery: true,
         peers: [
-          {
-            // A base64 32-byte public key stand-in (example uses a template Parameter Ref).
-            publicKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-            allowedIPs: ['0.0.0.0/0', '::/0'],
-          },
+          { publicKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', allowedIPs: ['10.1.0.0/16'] },
+          { publicKey: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBA=', allowedIPs: ['10.2.0.0/16'] },
         ],
       }),
-      clientRestrictions: { networks: ['0.0.0.0/0'] },
+      clientRestrictions: { networks: ['198.51.100.0/24'] },
+      metricsEnabled: true,
+      logGroupName: errors,
+      role: listenerRole,
       destinations: [
         new FirehoseDestination({
-          deliveryStreamArn: 'arn:aws:firehose:us-east-1:111122223333:deliverystream/syslog',
-          destinationName: 'SyslogFirehose',
-          description: 'This destination sends SYSLOG messages to S3 via Firehose for archival.',
-          formatter: Formatter.UTF8,
-          batching: { count: 1000, timeoutInSeconds: 30 },
-          logGroupName: '/proxylity-examples/syslog-destination-errors',
+          ...common,
+          destinationName: 'syslog-us-east-1-archive',
+          description: 'Original message bytes (base64) to the Object Lock archive through Firehose.',
+          deliveryStreamArn: 'arn:aws:firehose:us-east-1:111122223333:deliverystream/syslog-us-east-1-archive',
+          formatter: Formatter.BASE64,
+          batching: { count: 500, timeoutInSeconds: 10, sizeInMB: 0.5 },
         }),
         new CloudWatchLogsDestination({
-          logGroup,
-          destinationName: 'SyslogLogs',
-          description: 'This destination sends SYSLOG messages to CloudWatch.',
-          batching: { count: 10, timeoutInSeconds: 10 },
-          logGroupName: '/proxylity-examples/syslog-destination-errors',
+          ...common,
+          destinationName: 'syslog-us-east-1-logs',
+          description: 'Parsed messages (syslog formatter) as JSON events in CloudWatch Logs.',
+          logGroup: logsGroup,
+          formatter: Formatter.SYSLOG,
+          batching: { count: 200, timeoutInSeconds: 5, sizeInMB: 0.5 },
+        }),
+        new FirehoseDestination({
+          ...common,
+          destinationName: 'syslog-us-east-1-analytics',
+          description: 'Parsed messages (syslog formatter) to Firehose for Parquet conversion.',
+          deliveryStreamArn: 'arn:aws:firehose:us-east-1:111122223333:deliverystream/syslog-us-east-1-analytics',
+          formatter: Formatter.SYSLOG,
+          batching: { count: 500, timeoutInSeconds: 10, sizeInMB: 0.5 },
         }),
       ],
     });

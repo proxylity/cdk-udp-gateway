@@ -2,7 +2,7 @@
 // L2 destinations and listeners assume at runtime, reproducing the trust and grants the deployed
 // example roles use.
 
-import { Duration } from 'aws-cdk-lib';
+import { Aws, Duration } from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { ProxylityConfig } from '../proxylity-config';
@@ -47,25 +47,37 @@ export function createServiceRole(
   });
 }
 
-/** Add the `cloudwatch:PutMetricData` grant (on `*`) used when metrics are enabled. */
+/** The only CloudWatch namespace Proxylity publishes metrics to. */
+export const PROXYLITY_METRICS_NAMESPACE = 'Proxylity/UDP Gateway';
+
+/**
+ * Add the `cloudwatch:PutMetricData` grant used when metrics are enabled. `PutMetricData` doesn't
+ * support resource-level permissions, so the resource is `*` and the `cloudwatch:namespace`
+ * condition limits the role to the Proxylity namespace.
+ */
 export function addMetricsGrant(role: iam.IRole): void {
   role.addToPrincipalPolicy(
     new iam.PolicyStatement({
       actions: ['cloudwatch:PutMetricData'],
       resources: ['*'],
+      conditions: { StringEquals: { 'cloudwatch:namespace': PROXYLITY_METRICS_NAMESPACE } },
     }),
   );
 }
 
 /**
  * Add the log-delivery grant used when a log group name is set: `logs:CreateLogStream` +
- * `logs:PutLogEvents`, scoped to `logGroupArn + ':*'` when a concrete ARN is available, else `*`.
+ * `logs:PutLogEvents` on that group's streams in this account. The region is a wildcard because
+ * Proxylity writes listener logs from the region of the gateway that handles the traffic, and
+ * destination logs from the destination ARN's region.
  */
-export function addLogsGrant(role: iam.IRole, logGroupArn?: string): void {
+export function addLogsGrant(role: iam.IRole, logGroupName: string): void {
   role.addToPrincipalPolicy(
     new iam.PolicyStatement({
       actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
-      resources: [logGroupArn !== undefined ? `${logGroupArn}:*` : '*'],
+      resources: [
+        `arn:${Aws.PARTITION}:logs:*:${Aws.ACCOUNT_ID}:log-group:${logGroupName}:*`,
+      ],
     }),
   );
 }

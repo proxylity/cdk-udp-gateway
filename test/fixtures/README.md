@@ -50,8 +50,7 @@ The L2 golden tests normalize a small set of values before comparing (see
 - the stale `Enabled` (packet source) / `EnableLogging` (destination) keys, which L2 omits by design;
 - an inert empty `Arguments: {}` object L1's wire mapping emits for destinations with no service args.
 
-Two fixtures additionally record a `Formatter` value the hand-written example omits
-(`location-service`/`kinesis`/`packet-counter`/`webrtc`/etc. -> `base64`, the CloudWatch Logs
-destination in `syslog` -> `utf8`): L2 always emits the service's default formatter explicitly,
+Several fixtures additionally record a `Formatter` value the hand-written example omits
+(`location-service`/`kinesis`/`packet-counter`/`webrtc`/etc. -> `base64`): L2 always emits the service's default formatter explicitly,
 which is behaviorally identical to the example relying on the server default. The fixtures record the
 explicit value so the diff stays a clean deep-equal.

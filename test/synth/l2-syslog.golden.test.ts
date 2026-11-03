@@ -4,10 +4,10 @@ import { normalizeListenerProps, readFixture, synthListenerProps } from './golde
 import { L2SyslogStack } from './l2-syslog';
 
 /**
- * Golden / wire-shape parity test for the L2 re-authoring of `examples/syslog` (WireGuard decap ->
- * Firehose + CloudWatch Logs). L2 emits an explicit `Formatter: "utf8"` on the CloudWatch Logs
- * destination (the service default for logs ARNs) which the hand-written example omits; the
- * fixture records it since the two are behaviorally identical.
+ * Golden / wire-shape parity test for the listener in `examples/syslog` (WireGuard decap -> archive
+ * Firehose (base64), CloudWatch Logs (syslog) and analytics Firehose (syslog), with listener metrics
+ * and error logs). The example is a CDK app built on these constructs, so the fixture records the
+ * listener wire shape it synthesizes rather than a hand-written template.
  */
 describe('L2 syslog golden synth', () => {
   const synthesized = (() => {

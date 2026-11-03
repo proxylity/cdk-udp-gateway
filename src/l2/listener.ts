@@ -75,7 +75,7 @@ export class Listener extends Construct {
         addMetricsGrant(role);
       }
       if (props.logGroupName !== undefined) {
-        addLogsGrant(role);
+        addLogsGrant(role, props.logGroupName);
       }
       listenerRole = role;
       dependencies.push(role);
