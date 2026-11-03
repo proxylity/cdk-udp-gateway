@@ -173,8 +173,8 @@ export interface ListenerDestination {
   /** `Destinations[].Batching` — `{ Count?, TimeoutInSeconds?, SizeInMB? }`. */
   readonly batching?: Batching;
   /**
-   * `Destinations[].Formatter` — one of `base64`/`hex`/`ascii`/`utf8`/`coap`. Resource default is
-   * `utf8` for logs ARNs and `base64` otherwise.
+   * `Destinations[].Formatter` — one of `base64`/`hex`/`ascii`/`utf8`/`coap`/`coap+`/`syslog`.
+   * Resource default is `utf8` for logs ARNs and `base64` otherwise.
    */
   readonly formatter?: string;
   /** `Destinations[].FilterExpression` — BREX filter string. */
