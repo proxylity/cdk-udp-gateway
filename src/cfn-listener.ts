@@ -107,6 +107,22 @@ export interface DestinationArguments {
   /** `Arguments.UseAsyncInvoke` — mutually exclusive with `useResponseStreaming`. */
   readonly useAsyncInvoke?: boolean;
 
+  // --- Lambda MicroVM image (`tenantId*` above also apply) ---
+  /**
+   * `Arguments.IdleDurationSeconds` — seconds without packets before the MicroVM is suspended. The
+   * service clamps it to 60-28800 and defaults to 900. Must be an integer.
+   */
+  readonly idleDurationSeconds?: number;
+  /** `Arguments.ExecutionRoleArn` — IAM role ARN the MicroVM runs with (assumable by `lambda.amazonaws.com`). */
+  readonly executionRoleArn?: string;
+  /** `Arguments.RunHookExtraData` — up to 2048 characters delivered to the `/run` hook as `ExtraData`. */
+  readonly runHookExtraData?: string;
+  /**
+   * `Arguments.EgressNetworkConnectorArns` — 1 to 10 customer-managed egress network connector ARNs
+   * (optionally version-qualified) the MicroVMs use for outbound traffic. Omit for Lambda's default egress.
+   */
+  readonly egressNetworkConnectorArns?: string[];
+
   // --- SQS ---
   /** `Arguments.SendRaw`. */
   readonly sendRaw?: boolean;
@@ -480,6 +496,11 @@ function argumentsToWire(a?: DestinationArguments): { [key: string]: unknown } |
     ['TenantIdFormatter', a.tenantIdFormatter],
     ['UseResponseStreaming', a.useResponseStreaming],
     ['UseAsyncInvoke', a.useAsyncInvoke],
+    // Lambda MicroVM
+    ['IdleDurationSeconds', a.idleDurationSeconds],
+    ['ExecutionRoleArn', a.executionRoleArn],
+    ['RunHookExtraData', a.runHookExtraData],
+    ['EgressNetworkConnectorArns', a.egressNetworkConnectorArns],
     // SQS
     ['SendRaw', a.sendRaw],
     ['UseMessageAttributes', a.useMessageAttributes],
