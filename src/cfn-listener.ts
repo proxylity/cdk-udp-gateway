@@ -122,6 +122,16 @@ export interface DestinationArguments {
    * (optionally version-qualified) the MicroVMs use for outbound traffic. Omit for Lambda's default egress.
    */
   readonly egressNetworkConnectorArns?: string[];
+  /**
+   * `Arguments.RuntimeLogGroupName` — CloudWatch Logs group MicroVMs write their stdout/stderr to (using the
+   * execution role). Omit for Lambda's default, `/aws/lambda-microvms/{image name}`.
+   */
+  readonly runtimeLogGroupName?: string;
+  /**
+   * `Arguments.UseTenantIdForLogStreamName` — name each MicroVM's runtime log stream after its tenant ID.
+   * Requires `tenantId` or `tenantIdExpression`.
+   */
+  readonly useTenantIdForLogStreamName?: boolean;
 
   // --- SQS ---
   /** `Arguments.SendRaw`. */
@@ -501,6 +511,8 @@ function argumentsToWire(a?: DestinationArguments): { [key: string]: unknown } |
     ['ExecutionRoleArn', a.executionRoleArn],
     ['RunHookExtraData', a.runHookExtraData],
     ['EgressNetworkConnectorArns', a.egressNetworkConnectorArns],
+    ['RuntimeLogGroupName', a.runtimeLogGroupName],
+    ['UseTenantIdForLogStreamName', a.useTenantIdForLogStreamName],
     // SQS
     ['SendRaw', a.sendRaw],
     ['UseMessageAttributes', a.useMessageAttributes],
