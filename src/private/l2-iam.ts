@@ -30,12 +30,10 @@ function pad2(n: number): string {
 }
 
 /**
- * Create an `iam.Role` trusting the Proxylity ServiceRole (`sts:AssumeRole` from the
- * `Fn::FindInMap[ProxylityConfig, <region>, ServiceRole]` principal). This exactly reproduces the
- * `AssumeRolePolicyDocument` of the deployed example destination roles. The role's session duration
- * is NOT an IAM-role property here: it is carried on the wire via `Role.Duration` (see
- * {@link toDotNetTimeSpan}), so callers format `roleSessionDuration` into the destination/listener
- * entry rather than passing it to this factory.
+ * Create an `iam.Role` trusting the Proxylity ServiceRole with the account-level ExternalId from the
+ * included customer config. The role's session duration is NOT an IAM-role property here: it is
+ * carried on the wire via `Role.Duration` (see {@link toDotNetTimeSpan}), so callers format
+ * `roleSessionDuration` into the destination/listener entry rather than passing it to this factory.
  */
 export function createServiceRole(
   scope: Construct,
@@ -43,7 +41,9 @@ export function createServiceRole(
   proxylityConfig: ProxylityConfig,
 ): iam.Role {
   return new iam.Role(scope, id, {
-    assumedBy: new iam.ArnPrincipal(proxylityConfig.serviceRole()),
+    assumedBy: new iam.ArnPrincipal(proxylityConfig.serviceRole()).withConditions({
+      StringEquals: { 'sts:ExternalId': proxylityConfig.externalId() },
+    }),
   });
 }
 

@@ -29,7 +29,7 @@ Peer dependencies: `aws-cdk-lib@^2.160.0` and `constructs@^10.0.0`.
 | `CfnListener`       | `Custom::ProxylityUdpGatewayListener`         | The main resource. Inline destinations live in `destinations`. |
 | `CfnDestinationArn` | `Custom::ProxylityUdpGatewayDestinationArn`   | Registers one ARN for one destination in one ingress region. |
 | `CfnPacketSource`   | `Custom::ProxylityUdpGatewayPacketSource`     | Subscribes a listener to an SNS topic for server-initiated push. |
-| `ProxylityConfig`   | (helper, not a resource)                      | Injects the account/region config mapping and resolves `ServiceToken`/`ServiceRole`/`ApiKey`. |
+| `ProxylityConfig`   | (helper, not a resource)                      | Injects the account/region config mapping and resolves `ServiceToken`/`ServiceRole`/`ApiKey`/`ExternalId`. |
 
 > A standalone top-level destination resource is **not shipped**: destinations are created inline via
 > `CfnListener.destinations`.
@@ -37,9 +37,10 @@ Peer dependencies: `aws-cdk-lib@^2.160.0` and `constructs@^10.0.0`.
 ## Usage
 
 Every Proxylity stack begins by materializing the account/region configuration mapping with
-`ProxylityConfig`, then uses its accessors to resolve the `ServiceToken` and `ApiKey` for each
-resource. `ProxylityConfig.forStack` is idempotent — the `Mappings.ProxylityConfig` block is emitted
-exactly once per stack.
+`ProxylityConfig`, then uses its accessors to resolve the regional `ServiceToken` and account
+`ApiKey` for each resource, and the account-wide `ExternalId` for destination-role trust policies.
+`ProxylityConfig.forStack` is idempotent — the `Mappings.ProxylityConfig` block is emitted exactly
+once per stack.
 
 The example below reproduces the `packet-counter` example stack: a `udp` listener restricted to a
 caller-supplied CIDR, with one inline Lambda destination.
@@ -70,7 +71,9 @@ class PacketCounterStack extends Stack {
 
     // The destination role trusts the Proxylity ServiceRole (not lambda.amazonaws.com).
     const role = new iam.Role(this, 'DestinationRole', {
-      assumedBy: new iam.ArnPrincipal(config.serviceRole()),
+      assumedBy: new iam.ArnPrincipal(config.serviceRole()).withConditions({
+        StringEquals: { 'sts:ExternalId': config.externalId() },
+      }),
     });
     fn.grantInvoke(role);
 

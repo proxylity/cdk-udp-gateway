@@ -20,8 +20,8 @@ export function synthWithDestination(
 }
 
 /**
- * The `AssumeRolePolicyDocument` every derived L2 role must carry: trust the Proxylity ServiceRole
- * (`Fn::FindInMap[ProxylityConfig, <AWS::Region>, ServiceRole]`) with `sts:AssumeRole`.
+ * The `AssumeRolePolicyDocument` every derived L2 role must carry: trust the regional Proxylity
+ * ServiceRole and require the account-wide ExternalId from the included customer config.
  */
 export const PROXYLITY_TRUST = {
   Version: '2012-10-17',
@@ -32,6 +32,13 @@ export const PROXYLITY_TRUST = {
       Principal: {
         AWS: {
           'Fn::FindInMap': ['ProxylityConfig', { Ref: 'AWS::Region' }, 'ServiceRole'],
+        },
+      },
+      Condition: {
+        StringEquals: {
+          'sts:ExternalId': {
+            'Fn::FindInMap': ['ProxylityConfig', 'Account', 'ExternalId'],
+          },
         },
       },
     },

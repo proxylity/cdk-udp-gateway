@@ -53,12 +53,12 @@ function acknowledgeIncludedMapping(stack: Stack): void {
 
 /**
  * Materializes the account/region Proxylity configuration mapping and provides typed accessors for
- * the three values every Proxylity UDP Gateway stack resolves via `Fn::FindInMap`.
+ * the values Proxylity UDP Gateway stacks resolve via `Fn::FindInMap`.
  *
  * It injects, once per `Stack`, the `Mappings.ProxylityConfig` block populated by an `AWS::Include`
  * transform of `s3://proxylity-config-${AWS::Region}/${AWS::AccountId}/customer-config.json`
  * (the exact block every example template begins with), then exposes `serviceToken`, `serviceRole`,
- * and `apiKey` so callers never hand-write the `Fn::FindInMap` tuples.
+ * `apiKey`, and `externalId` so callers never hand-write the `Fn::FindInMap` tuples.
  *
  * Because a `CfnMapping` cannot represent a value that is an `Fn::Transform` rather than a literal
  * map, the mapping is emitted directly from a minimal internal `CfnElement` into the synthesized
@@ -121,5 +121,13 @@ export class ProxylityConfig extends Construct {
    */
   public apiKey(): string {
     return Fn.findInMap(MAPPING_NAME, 'Account', 'ApiKey');
+  }
+
+  /**
+   * `Fn::FindInMap(["ProxylityConfig", "Account", "ExternalId"])` as a token string. The value is
+   * account-wide and is shared by destination-role trust policies in all regions.
+   */
+  public externalId(): string {
+    return Fn.findInMap(MAPPING_NAME, 'Account', 'ExternalId');
   }
 }

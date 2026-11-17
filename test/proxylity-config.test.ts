@@ -62,6 +62,15 @@ describe('ProxylityConfig', () => {
     });
   });
 
+  test('externalId resolves Fn::FindInMap with the literal Account key', () => {
+    const stack = new Stack(new App(), 'Stack');
+    const config = ProxylityConfig.forStack(stack);
+    const resolved = stack.resolve(config.externalId());
+    expect(resolved).toEqual({
+      'Fn::FindInMap': ['ProxylityConfig', 'Account', 'ExternalId'],
+    });
+  });
+
   test('serviceToken honors an explicit region', () => {
     const stack = new Stack(new App(), 'Stack');
     const config = ProxylityConfig.forStack(stack);
